@@ -12,6 +12,7 @@
  * You should have received a copy of the GNU General Public License along with ADDA. If not, see
  * <http://www.gnu.org/licenses/>.
  */
+//hello world this is new WD! God help us
 // project headers
 #include "comm.h"
 #include "debug.h"

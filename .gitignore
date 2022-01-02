@@ -2,3 +2,4 @@
 # including them into $GIT_DIR/info/exclude (in this repository) or globally into $XDG_CONFIG_HOME/git/ignore
 # See https://git-scm.com/docs/gitignore 
 .DS_Store
+/.metadata/
