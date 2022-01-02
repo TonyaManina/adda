@@ -474,6 +474,23 @@ static inline void CrossProd(const double a[static 3],const double b[static 3],d
 }
 
 //======================================================================================================================
+//2.01.22. static inline? static restrict?
+
+static inline double AbsOutProd(const double a[static 3],const double b[static 3])
+/* norm of outer product of two real vectors[3] (area of the corresponding parallelogram)
+ * !!! pointers a and b must not alias !!! (does not make sense to be the same)
+ */
+{
+	double x,y,z;
+	x=a[1]*b[2]-a[2]*b[1];
+	y=a[2]*b[0]-a[0]*b[2];
+	z=a[0]*b[1]-a[1]*b[0];
+
+	return sqrt(x*x+y*y+z*z);
+}
+
+//============================================================
+
 
 static inline void vNormalize(double a[static 3])
 // normalize real vector to have unit norm
