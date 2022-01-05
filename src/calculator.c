@@ -61,7 +61,7 @@ double * restrict muel_alpha; // mueller matrix for different values of alpha
 // used in crosssec.c
 doublecomplex * restrict E_ad; // complex field E, calculated for alldir
 double * restrict E2_alldir; // square of E (scaled with msub, so ~ Poynting vector or dC/dOmega), calculated for alldir
-doublecomplex cc[MAX_NMAT][3]; // couple constants
+//doublecomplex cc[MAX_NMAT][3]; // couple constants
 #ifndef SPARSE
 doublecomplex * restrict expsX,* restrict expsY,* restrict expsZ; // arrays of exponents along 3 axes (for calc_field)
 #endif
@@ -573,11 +573,11 @@ static void CoupleConstant(doublecomplex *mrel,const enum incpol which,doublecom
 			}
 		}
 		if (asym || anisotropy) {
-			if (!orient_avg && IFROOT) PrintBoth(logfile, "CoupleConstant: "CFORM3V"\n",REIM3V(res));
+		//	if (!orient_avg && IFROOT) PrintBoth(logfile, "CoupleConstant: "CFORM3V"\n",REIM3V(res));
 		}
 		else {
 			res[2]=res[1]=res[0];
-			if (!orient_avg && IFROOT) PrintBoth(logfile,"CoupleConstant: "CFORM"\n",REIM(res[0]));
+			//if (!orient_avg && IFROOT) PrintBoth(logfile,"CoupleConstant: "CFORM"\n",REIM(res[0]));
 		}
 	}
 }
@@ -589,10 +589,19 @@ static void InitCC(const enum incpol which)
 {
 	int i,j;
 	doublecomplex m;
+	doublecomplex cc[3]; // couple constant
+		size_t dip;
 
+		// !!! TODO: this probably needs optimization
+		for (dip=0;dip<local_nvoid_Ndip;dip++)
+		{
+			// !!! TODO: anisotropy is not considered yet
+			CoupleConstant(refind+dip,which,cc);
+			cSqrt(cc[0],cc_sqrt[dip]);
+		}
 	for(i=0;i<Nmat;i++) {
-		CoupleConstant(ref_index+Ncomp*i,which,cc[i]);
-		for(j=0;j<3;j++) cc_sqrt[i][j]=csqrt(cc[i][j]);
+		//CoupleConstant(ref_index+Ncomp*i,which,cc[i]);
+		//for(j=0;j<3;j++) cc_sqrt[i][j]=csqrt(cc[i][j]);
 		// chi_inv=1/(V*chi)=4*PI/(V(m^2-1)); for anisotropic - by components
 		for (j=0;j<Ncomp;j++) {
 			m=ref_index[Ncomp*i+j];
@@ -695,6 +704,8 @@ static void AllocateEverything(void)
 	 * vector, will surely cause segmentation fault afterwards. So we do not implement these extra tests for now.
 	 */
 	// allocate all the memory
+	if (!prognosis) MALLOC_VECTOR(cc_sqrt,complex,local_nvoid_Ndip,ALL);
+		memory+=sizeof(doublecomplex)*(double)local_nvoid_Ndip;
 	tmp=sizeof(doublecomplex)*(double)local_nRows;
 	if (!prognosis) { // main 5 vectors, some of them are used in the iterative solver
 		MALLOC_VECTOR(xvec,complex,local_nRows,ALL);
@@ -874,6 +885,7 @@ void FreeEverything(void)
 	FreeInteraction();
 #ifndef SPARSE	
 	Free_FFT_Dmat();
+	Free_cVector(cc_sqrt);
 	Free_cVector(expsX);
 	Free_cVector(expsY);
 	Free_cVector(expsZ);
@@ -942,10 +954,11 @@ void FreeEverything(void)
 			Free_general(muel_phi_buf);
 		}
 	}
-	// these 2 were allocated in MakeParticle
+	// these 4 were allocated in MakeParticle
 	Free_general(DipoleCoord);
 	Free_general(material);
-
+	Free_general(position);
+	Free_cVector(refind);
 	if (orient_avg) {
 		if (IFROOT) {
 			if (store_mueller) {

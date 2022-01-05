@@ -36,7 +36,7 @@
 // defined and initialized in calculator.c
 extern doublecomplex * restrict E_ad;
 extern double * restrict E2_alldir;
-extern const doublecomplex cc[][3];
+//extern const doublecomplex cc[][3];
 #ifndef SPARSE
 extern doublecomplex * restrict expsX,* restrict expsY,* restrict expsZ;
 #endif
@@ -872,8 +872,9 @@ double AbsCross(void)
 	int i,j;
 	unsigned char mat;
 	double sum,temp1,temp2;
-	doublecomplex m,m2m1;
+	doublecomplex m,m2m1,tmp;
 	double mult[MAX_NMAT][3]; // multiplier (possibly anisotropic)
+	double multdr;  // multiplier for draine formulation
 	double mult1[MAX_NMAT];   // multiplier, which is always isotropic
 
 	// Cabs = 4*pi*sum
@@ -892,11 +893,14 @@ double AbsCross(void)
 			 * summand: Im(P.Eexc(*))-(2/3)k^3*|P|^2=|P|^2*(-Im(1/cc)-(2/3)k^3)
 			 */
 			temp1 = 2*WaveNum*WaveNum*WaveNum/3;
-			for (i=0;i<Nmat;i++) for (j=0;j<3;j++) mult[i][j]=-cimag(1/cc[i][j])-temp1;
+			//for (i=0;i<Nmat;i++) for (j=0;j<3;j++) mult[i][j]=-cimag(1/cc[i][j])-temp1;
 			for (dip=0,sum=0;dip<local_nvoid_Ndip;++dip) {
-				mat=material[dip];
+				//mat=material[dip];
+				cSquare(cc_sqrt[dip],tmp);
+				multdr=-cInvIm(tmp)-temp1;
 				index=3*dip;
-				for(i=0;i<3;i++) sum+=mult[mat][i]*cAbs2(pvec[index+i]);
+				//for(i=0;i<3;i++) sum+=mult[mat][i]*cAbs2(pvec[index+i]);
+				for(i=0;i<3;i++) sum+=multdr*cAbs2(pvec[index+i]);
 			}
 			break;
 		case SQ_FINDIP:

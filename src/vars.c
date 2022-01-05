@@ -30,6 +30,8 @@ double ka_eq;             // volume-equivalent size parameter
 double inv_G;             // inverse of equivalent cross section
 double WaveNum;           // wavenumber of incident light
 double * restrict DipoleCoord;      // vector to hold the coordinates of the dipoles
+doublecomplex * restrict refind;    // stores (effective) refractive index of each dipole
+doublecomplex * restrict cc_sqrt;   // sqrt of couple constants (for each dipole)
 double memory;            // total memory usage in bytes
 double memPeak;           // peak memory usage in bytes
 enum inter IntRelation;   // type of formula for interaction term
@@ -78,7 +80,7 @@ int term_width;                  // width of the terminal to which ADDA produces
 int Nmat;  // number of different domains (for each either scalar or tensor refractive index is specified
 int Ncomp; // number of components of each refractive index (1 or 3)
 doublecomplex ref_index[MAX_NMAT];  // a set of refractive indexes
-doublecomplex cc_sqrt[MAX_NMAT][3]; // sqrt of couple constants
+//doublecomplex cc_sqrt[MAX_NMAT][3]; // sqrt of couple constants
 doublecomplex chi_inv[MAX_NMAT][3]; // normalized inverse susceptibility: = 1/(V*chi)
 unsigned char * restrict material;  // material: index for cc
 

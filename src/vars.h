@@ -32,7 +32,8 @@ extern int boxX,boxY,boxZ;
 extern size_t boxXY;
 extern double gridspace,dsX,dsY,dsZ,rectScaleX,rectScaleY,rectScaleZ,dipvol,kd,kdX,kdY,kdZ,ka_eq,inv_G,WaveNum;
 extern double * restrict DipoleCoord;
-
+extern doublecomplex * restrict refind;
+extern doublecomplex * restrict cc_sqrt;
 extern double memory,memPeak;
 extern enum inter IntRelation;
 extern enum pol PolRelation;
@@ -57,7 +58,7 @@ extern int term_width;
 // refractive index
 extern int Nmat,Ncomp;
 extern doublecomplex ref_index[MAX_NMAT];
-extern doublecomplex cc_sqrt[MAX_NMAT][3];
+//extern doublecomplex cc_sqrt[MAX_NMAT][3];
 extern doublecomplex chi_inv[MAX_NMAT][3];
 extern unsigned char * restrict material;
 
