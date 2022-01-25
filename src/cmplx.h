@@ -56,6 +56,11 @@ static inline double cAbs2(const doublecomplex a)
 
 //======================================================================================================================
 
+static inline doublecomplex cSquare(const doublecomplex a)
+{
+	return creal(a)*creal(a)-cimag(a)*cimag(a)+2*creal(a)*cimag(a);
+}
+
 static inline doublecomplex cSqrtCut(const doublecomplex a)
 // square root of complex number, with explicit handling of branch cut (not to depend on sign of zero of imaginary part)
 /* It is designed for calculating normal component of the transmitted wavevector when passing through the plane
@@ -124,6 +129,24 @@ static inline void vConj(const doublecomplex a[static 3],doublecomplex b[static 
 
 //======================================================================================================================
 
+static inline double cInvIm(const doublecomplex a)
+// returns Im of inverse of a; designed to avoid under and overflows
+{
+	double tmp, a_RE, a_IM;
+	a_RE=creal(a);
+	a_IM=cimag(a);
+
+	if (fabs(a_RE)>=fabs(a_IM)) {
+		tmp=a_IM/a_RE;
+		return (-tmp/(a_RE+a_IM*tmp));
+	}
+	else {
+		tmp=a_RE/a_IM;
+		return (-1/(a_RE*tmp+a_IM));
+	}
+}
+
+//============================================================
 static inline void vReal(const doublecomplex a[static 3],double b[static 3])
 // takes real part of the complex vector; b=Re(a)
 {
@@ -288,7 +311,7 @@ static inline void cvLinComb1(const doublecomplex a[static 3],const doublecomple
 	c[2] = c1*a[2] + b[2];
 }
 
-//======================================================================================================================
+//============================================================
 
 static inline void cvLinComb1_cmplx(doublecomplex a[static 3],doublecomplex b[static 3],const doublecomplex c1,
 	doublecomplex c[static 3])
@@ -423,6 +446,16 @@ static inline void vMultScal(const double a,const double b[static 3],double c[st
 
 //======================================================================================================================
 
+
+static inline void vMultScalSelf(const double a,double b[static 3])
+// multiplication of real vector by scalar; b*=a;
+{
+	b[0]*=a;
+	b[1]*=a;
+	b[2]*=a;
+}
+
+//============================================================
 static inline void vMult(const double a[static 3],const double b[static 3],double c[static 3])
 // multiplication of two vectors (by elements); c[i]=a[i]*b[i];
 {

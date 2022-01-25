@@ -896,7 +896,8 @@ double AbsCross(void)
 			//for (i=0;i<Nmat;i++) for (j=0;j<3;j++) mult[i][j]=-cimag(1/cc[i][j])-temp1;
 			for (dip=0,sum=0;dip<local_nvoid_Ndip;++dip) {
 				//mat=material[dip];
-				cSquare(cc_sqrt[dip],tmp);
+				tmp=cc_sqrt[dip]*cc_sqrt[dip];
+				//cSquare(cc_sqrt[dip],tmp);
 				multdr=-cInvIm(tmp)-temp1;
 				index=3*dip;
 				//for(i=0;i<3;i++) sum+=mult[mat][i]*cAbs2(pvec[index+i]);

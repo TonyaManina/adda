@@ -2473,26 +2473,36 @@ void MakeParticle(void)
 	index=0;
 	nvol=0;
 	for (dip=0;dip<local_Ndip;dip++) if (material_tmp[dip]<Nmat) {
+	//	double real_temp_2, real_temp_3;
 		mat=material[index]=material_tmp[dip];
 		memcpy(position+3*index,position_tmp+3*dip,3*sizeof(short int));
 		// !!! TODO: this is currently incompatible with anisotropy
 				vf=volfrac_tmp[dip];
 				nvol+=vf;
-				if (vf==1) cEqual(ref_index[mat],refind[index]);
+				if (vf==1) ref_index[mat]=refind[index];
 				else {
-					cSquare(ref_index[mat],temp1);
-					cEqual(temp1,temp2);
-					creal(temp2)-=1;
-					cEqual(temp1,temp3);
-					creal(temp3)+=2;
-					cDiv(temp2,temp3,temp1);
-					cMultReal(vf,temp1,temp1); // temp1=x=vf*(m^2-1)/(m^2+2)
-					cMultReal(2,temp1,temp2);
-					creal(temp2)+=1;
-					cInvSign2(temp1,temp3);
-					creal(temp3)+=1;
-					cDiv(temp2,temp3,temp1); // temp1=(1+2x)/(1-x)
-					cSqrt(temp1,refind[index]);
+
+					temp1=ref_index[mat]*ref_index[mat];
+					//cEqual(temp1,temp2);
+					temp2=temp1;
+					temp2-=1;
+					//cEqual(temp1,temp3);
+					temp3=temp1;
+					temp3+=2;
+					//cDiv(temp2,temp3,temp1);
+					temp1=temp2/temp3;
+					//cMultReal(vf,temp1,temp1); // temp1=x=vf*(m^2-1)/(m^2+2)
+					temp1=temp1*vf; // temp1=x=vf*(m^2-1)/(m^2+2)
+					//cMultReal(2,temp1,temp2);
+					temp2=temp1*2;
+					temp2+=1;
+				//	cInvSign2(temp1,temp3);
+					temp3=-temp1;
+					temp3+=1;
+					//cDiv(temp2,temp3,temp1); // temp1=(1+2x)/(1-x)
+					temp1=temp2/temp3;
+					//cSqrt(temp1,refind[index]);
+					refind[index]=csqrt(temp1);
 				}
 		index++;
 	}

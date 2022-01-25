@@ -1427,7 +1427,7 @@ static void InitFieldfromE(void)
 	// calculate x = (1/cc_sqrt)*V*chi*E (both x and E are stored in xvec)
 	doublecomplex mult[MAX_NMAT][3];
 	int i,j;
-	for (i=0;i<Nmat;i++) for (j=0;j<3;j++) mult[i][j]=1/(cc_sqrt[i][j]*chi_inv[i][j]);
+	for (i=0;i<Nmat;i++) for (j=0;j<3;j++) mult[i][j]=1/(cc_sqrt[j]*chi_inv[i][j]);
 	nMultSelf_mat(xvec,mult);
 	// calculate A.x_0, r_0=b-A.x_0, and |r_0|^2
 	MatVec(xvec,Avecbuffer,NULL,false,&Timing_MVP,&Timing_MVPComm);
