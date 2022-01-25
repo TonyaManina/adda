@@ -597,7 +597,8 @@ static void InitCC(const enum incpol which)
 		{
 			// !!! TODO: anisotropy is not considered yet
 			CoupleConstant(refind+dip,which,cc);
-			cSqrt(cc[0],cc_sqrt[dip]);
+		//	cSqrt(cc[0],cc_sqrt[dip]);
+			cc_sqrt[dip] = csqrt(cc[0])
 		}
 	for(i=0;i<Nmat;i++) {
 		//CoupleConstant(ref_index+Ncomp*i,which,cc[i]);
