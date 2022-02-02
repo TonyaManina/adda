@@ -58,6 +58,7 @@ void PrintInfo(void);
 
 int main(int argc,char **argv)
 {
+	printf("ADDA v1.0");
 	/* Pointer argv can be declared restrict here and in all calling functions. However, that would be hard to verify,
 	 * especially in newly-added functions for parsing command line option. Since the optimization gain is expected to
 	 * be minor, if any, we stay conservative on this issue.
