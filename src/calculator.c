@@ -958,7 +958,7 @@ void FreeEverything(void)
 	// these 4 were allocated in MakeParticle
 	Free_general(DipoleCoord);
 	Free_general(material);
-	Free_general(position);
+	//Free_general(position);
 	Free_cVector(refind);
 	if (orient_avg) {
 		if (IFROOT) {

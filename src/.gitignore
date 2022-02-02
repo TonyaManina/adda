@@ -17,3 +17,6 @@
 /*/*.geom
 /*/out
 /*/*.clstr
+*.cproject
+*.project
+run*/
