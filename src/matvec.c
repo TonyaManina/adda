@@ -208,8 +208,7 @@ void MatVec (doublecomplex * restrict argvec,    // the argument vector
 		index=IndexXmatrix(position[j],position[j+1],position[j+2]);
 		// Xmat=cc_sqrt*argvec
 		for (Xcomp=0;Xcomp<3;Xcomp++)
-			//05.01.22. What is it I don't know
-			Xmatrix[index+Xcomp*local_Nsmall]=cc_sqrt[Xcomp]*argvec[j+Xcomp];
+			Xmatrix[index+Xcomp*local_Nsmall]=cc_sqrt[i]*argvec[j+Xcomp];
 	}
 #ifdef PRECISE_TIMING
 	GET_SYSTEM_TIME(tvp+1);
@@ -355,7 +354,7 @@ void MatVec (doublecomplex * restrict argvec,    // the argument vector
 	//	mat=material[i];
 		index=IndexXmatrix(position[j],position[j+1],position[j+2]);
 		for (Xcomp=0;Xcomp<3;Xcomp++) // result=argvec+cc_sqrt*Xmat
-			resultvec[j+Xcomp]=argvec[j+Xcomp]+cc_sqrt[Xcomp]*Xmatrix[index+Xcomp*local_Nsmall];
+			resultvec[j+Xcomp]=argvec[j+Xcomp]+cc_sqrt[i]*Xmatrix[index+Xcomp*local_Nsmall];
 		// norm is unaffected by conjugation, hence can be computed here
 		if (ipr) *inprod+=cvNorm2(resultvec+j);
 	}

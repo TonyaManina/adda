@@ -539,17 +539,6 @@ static void CalcFieldFree(doublecomplex ebuff[static restrict 3], // where to wr
 #ifdef SPARSE
 	doublecomplex expX, expY, expZ;
 #endif
-
-	if (ScatRelation==SQ_SO) {
-		// !!! this should never happen
-		if (anisotropy || rectDip) LogError(ONE_POS,"Incompatibility error in CalcField");
-		// calculate correction coefficient
-		if (scat_avg) na=0;
-		else na=DotProd(n,prop);
-		temp=kd*kd/24;
-		// mult_mat=1-(kd^2/24)(m^2-2(n.a)m+1)
-		for(i=0;i<Nmat;i++) mult_mat[i]=1-temp*(ref_index[i]*ref_index[i]-2*na*ref_index[i]+1);
-	}
 	cvInit(sum);
 #ifndef SPARSE
 	// prepare values of exponents, along each of the coordinates
@@ -591,7 +580,7 @@ static void CalcFieldFree(doublecomplex ebuff[static restrict 3], // where to wr
 		 * was like that at r1209). However, the code was much harder to read and maintain. Since there are several
 		 * ideas that may speed up this calculation by a factor of a few times, we should not worry about 5%.
 		 */
-		if (ScatRelation==SQ_SO) a*=mult_mat[material[j]];
+		//if (ScatRelation==SQ_SO) a*=mult_mat[material[j]];
 		// sum(P*exp(-ik*r.n))
 		for(i=0;i<3;i++) sum[i]+=pvec[jjj+i]*a;
 	} /* end for j */
@@ -875,7 +864,7 @@ double AbsCross(void)
 	doublecomplex m,m2m1,tmp;
 	double mult[MAX_NMAT][3]; // multiplier (possibly anisotropic)
 	double multdr;  // multiplier for draine formulation
-	double mult1[MAX_NMAT];   // multiplier, which is always isotropic
+	//double mult1[MAX_NMAT];   // multiplier, which is always isotropic
 
 	// Cabs = 4*pi*sum
 	/* In this function IGT_SO is equivalent to DRAINE. It may seem more logical to make IGT_SO same as FINDIP. However,
@@ -908,7 +897,7 @@ double AbsCross(void)
 			/* based on Eq.(31) or equivalently Eq.(58) from the same paper (ref. above)
 			 * summand: Im(P.E(*))=-|P|^2*Im(chi_inv), chi_inv=1/(V*chi)
 			 */
-			temp1 = 2*WaveNum*WaveNum*WaveNum/3;
+			//temp1 = 2*WaveNum*WaveNum*WaveNum/3;
 			for (i=0;i<Nmat;i++) for (j=0;j<3;j++) mult[i][j]=-cimag(chi_inv[i][j]);
 			for (dip=0,sum=0;dip<local_nvoid_Ndip;++dip) {
 				mat=material[dip];
@@ -916,21 +905,7 @@ double AbsCross(void)
 				for(i=0;i<3;i++) sum+=mult[mat][i]*cAbs2(pvec[index+i]);
 			}
 			break;
-		case SQ_SO:
-			// !!! the following should never happen
-			if (anisotropy || rectDip) LogError(ONE_POS,"Incompatibility error in AbsCross");
-			// calculate mult1
-			temp1=kd*kd/6;
-			temp2=FOUR_PI/dipvol;
-			for (i=0;i<Nmat;i++) {
-				m=ref_index[i];
-				m2m1=m*m-1;
-				// mult1=-Im(1/chi)*(1+(kd*Im(m))^2)/d^3;  chi=(m^2-1)/(4*PI)
-				mult1[i]=temp2*cimag(m2m1)*(1+temp1*cimag(m)*cimag(m))/cAbs2(m2m1);
-			}
-			// main cycle
-			for (dip=0,sum=0;dip<local_nvoid_Ndip;++dip) sum+=mult1[material[dip]]*cvNorm2(pvec+3*dip);
-			break;
+
 	}
 	MyInnerProduct(&sum,double_type,1,&Timing_ScatQuanComm);
 	if (surface) sum*=inc_scale;

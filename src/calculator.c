@@ -598,7 +598,6 @@ static void InitCC(const enum incpol which)
 			// !!! TODO: anisotropy is not considered yet
 			CoupleConstant(refind+dip,which,cc);
 			cc_sqrt[dip]=csqrt(cc[0]);
-			//cSqrt(cc[0],cc_sqrt[dip]);
 		}
 	for(i=0;i<Nmat;i++) {
 		//CoupleConstant(ref_index+Ncomp*i,which,cc[i]);
@@ -955,10 +954,9 @@ void FreeEverything(void)
 			Free_general(muel_phi_buf);
 		}
 	}
-	// these 4 were allocated in MakeParticle
+	// these 3 were allocated in MakeParticle
 	Free_general(DipoleCoord);
 	Free_general(material);
-	//Free_general(position);
 	Free_cVector(refind);
 	if (orient_avg) {
 		if (IFROOT) {

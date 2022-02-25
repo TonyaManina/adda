@@ -32,6 +32,7 @@
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <time.h> // for time and clock (used for random seed)
 
@@ -2338,6 +2339,7 @@ void MakeParticle(void)
 										if (r2+2*tmp1>0.25)
 										{
 											vf=CubeSphereSection(fabs(xr)-dh,fabs(yr)-dh,fabs(zr)-dh,r2,0.25,2*dh);
+											//vf=1;
 										}
 									}
 				break;
@@ -2358,6 +2360,9 @@ void MakeParticle(void)
 		position_tmp[3*index+1]=(unsigned short)j;
 		position_tmp[3*index+2]=(unsigned short)k;
 		// afterwards multiplied by dipole sizes
+		DipoleCoord_tmp[3*index]=i-cX;
+		DipoleCoord_tmp[3*index+1]=j-cY;
+		DipoleCoord_tmp[3*index+2]=k-cZ;
 		material_tmp[index]=(unsigned char)mat;
 		volfrac_tmp[index] = vf;
 		index++;
@@ -2472,40 +2477,42 @@ void MakeParticle(void)
 	// copy nontrivial part of arrays and compute (effective) refractive index
 	index=0;
 	nvol=0;
+	FILE *fp;
+	fp = fopen("refind.txt", "w+");
 	for (dip=0;dip<local_Ndip;dip++) if (material_tmp[dip]<Nmat) {
 	//	double real_temp_2, real_temp_3;
 		mat=material[index]=material_tmp[dip];
+		vMultScal(gridspace,DipoleCoord_tmp+3*dip,DipoleCoord+3*index);
 		memcpy(position+3*index,position_tmp+3*dip,3*sizeof(short int));
 		// !!! TODO: this is currently incompatible with anisotropy
 				vf=volfrac_tmp[dip];
 				nvol+=vf;
-				if (vf==1) ref_index[mat]=refind[index];
+				//if (vf<=0.5) vf=0.0001;
+				//else vf=1;
+				//vf=1;
+				//fprintf(fp, "vf=%.6e\n", vf);
+				//fprint(fp, "dip=%d\n", dip);
+				if (vf==1) refind[index]=ref_index[mat];
 				else {
-
 					temp1=ref_index[mat]*ref_index[mat];
-					//cEqual(temp1,temp2);
 					temp2=temp1;
 					temp2-=1;
-					//cEqual(temp1,temp3);
 					temp3=temp1;
 					temp3+=2;
-					//cDiv(temp2,temp3,temp1);
 					temp1=temp2/temp3;
-					//cMultReal(vf,temp1,temp1); // temp1=x=vf*(m^2-1)/(m^2+2)
 					temp1=temp1*vf; // temp1=x=vf*(m^2-1)/(m^2+2)
-					//cMultReal(2,temp1,temp2);
 					temp2=temp1*2;
 					temp2+=1;
-				//	cInvSign2(temp1,temp3);
 					temp3=-temp1;
 					temp3+=1;
-					//cDiv(temp2,temp3,temp1); // temp1=(1+2x)/(1-x)
 					temp1=temp2/temp3;
-					//cSqrt(temp1,refind[index]);
 					refind[index]=csqrt(temp1);
 				}
-		index++;
+				fprintf(fp, "refind[%llu]= %.6e + i * %.6e\n", index, creal(refind[index]), cimag(refind[index]));
+				index++;
+
 	}
+	fclose(fp);
 	/* from this moment on a_eq and all derived quantities are based on the real a_eq, which can
 		 * in several cases be slightly different from the one given by '-eq_rad' option.
 		 */
