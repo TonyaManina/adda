@@ -30,6 +30,7 @@ double ka_eq;             // volume-equivalent size parameter
 double inv_G;             // inverse of equivalent cross section
 double WaveNum;           // wavenumber of incident light
 double * restrict DipoleCoord;      // vector to hold the coordinates of the dipoles
+double *restrict plSec; //vector to hold the coefficients determining the plane
 doublecomplex * restrict refind;    // stores (effective) refractive index of each dipole
 doublecomplex * restrict cc_sqrt;   // sqrt of couple constants (for each dipole)
 double memory;            // total memory usage in bytes

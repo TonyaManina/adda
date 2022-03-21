@@ -552,17 +552,18 @@ void nMult_dip(doublecomplex * restrict a,const doublecomplex * restrict b,/*con
 {
 	register const size_t nd=local_nvoid_Ndip; // name 'nd' to distinguish with 'n' used elsewhere
 	register size_t i,k;
+	register int j;
 	/* Hopefully, the following declaration is enough to allow efficient loop unrolling. So the compiler should
 	 * understand that none of the used vectors alias. Otherwise, deeper optimization should be used.
 	 */
-	const doublecomplex * restrict val;
+	doublecomplex val;
 
 	LARGE_LOOP;
 	for (i=0,k=0;i<nd;i++,k+=3) {
-		val=c;
-		a[k] = val[0]*b[k];
-		a[k+1] = val[1]*b[k+1];
-		a[k+2] = val[2]*b[k+2];
+		val=c[i];
+		        a[k] = val*b[k];
+		        a[k+1] = val*b[k+1];
+		        a[k+2] = val*b[k+2];
 	}
 }
 

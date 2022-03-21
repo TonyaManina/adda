@@ -958,6 +958,7 @@ void FreeEverything(void)
 	Free_general(DipoleCoord);
 	Free_general(material);
 	Free_cVector(refind);
+	Free_general(plSec);
 	if (orient_avg) {
 		if (IFROOT) {
 			if (store_mueller) {

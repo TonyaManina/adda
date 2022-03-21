@@ -2002,13 +2002,13 @@ static inline bool EdgeIn(int i,int j,double nv[8],double res[3])
 
 //==========================================================
 
-double CubePlaneSection(double a,double b,double c,double R)
+double CubePlaneSection(double a,double b,double c)
 /* Calculates volume fraction of unit cube [0,1]x[0,1]x[0,1] between the origin and the plane
  * ax+by+cz=1. It is assumed that a,b,c>=0. The general formula is:
  * [1 - f(a) - f(b) - f(c) + f(a+b) + f(a+c) + f(b+c) - f(a+b+c)]/(6abc), where
  * f(a)= 0 for a>=1 and (1-a)^3 otherwise.
  * The function optimizes the formula for speed and takes care of coefficients close to zero
- * R is used only for correction
+ * There is a possibility to add correction for spheres, see wd branch if interested
  */
 {
 	double tmp,res;
@@ -2089,60 +2089,25 @@ double CubePlaneSection(double a,double b,double c,double R)
 	vMultScalSelf(1/(a*a+b*b+c*c),rc); // rc=n/|n|^2
 	int i,j;
 	for (i=0;i<vN;i++) for(j=0;j<3;j++) p[i][j]-=rc[j]; // shift vertices vectors into a plane
-	double iner=0;
-	for (i=0,j=1;i<vN;i++,j++) { // main sum for inertia moment
-		if (j==vN) j=0; // cycle for the last vertex
-		iner+=AbsOutProd(p[i],p[j])*(DotProd(p[i],p[i])+DotProd(p[i],p[j])+DotProd(p[j],p[j]));
-	} // inertia moment is iner/12
-	// this formula is based on expression for height between tangent plane and sphere, as r^2/2*R
-	return vf-iner/(24*R);
+
+	return vf;
 }
 
 //==========================================================
-
-double CubeSphereSection(const double x,const double y,const double z,const double r2,
-	const double R2,const double d)
-/* Calculates volume fraction of cube with side d: [0,d]x[0,d]x[0,d] with a sphere of radius R,
- * centered at (-x,-y,-z). r2=x^2+y^2+z^2, R2=R^2. It is assumed that x,y,z>=0 and R2>r2,
- * i.e. basic preliminary tests has been done and symmetries - used.
- *
- * Currently uses an approximate formula based on replacing sphere with a plane.
- */
-{
-	double a,b,c; // plane equation: ax+by+cz=d
-	double tmp;
-
-	// builds a plane through intersection of sphere with coordinate axes (a=d/x0,b=d/y0,c=d/z0)
-//	tmp=R2-r2;
-//	a=d*(sqrt(tmp+x*x)+x)/tmp;
-//	b=d*(sqrt(tmp+y*y)+y)/tmp;
-//	c=d*(sqrt(tmp+z*z)+z)/tmp;
-//	return CubePlaneSection(a,b,c);
-	// builds a plane tangential to sphere and perpendicular to (x,y,z)
-	if (r2==0) a=b=c=d/sqrt(3*R2); // may happen for very small grid sizes
-	else {
-		tmp=d/(sqrt(r2*R2)-r2);
-		a=tmp*x;
-		b=tmp*y;
-		c=tmp*z;
-	}
-	return CubePlaneSection(a,b,c,sqrt(R2)/d);
-}
-
-//==========================================================
-
 
 void MakeParticle(void)
 // creates a particle; initializes all dipoles counts, dpl, dipole sizes
 {
 	
-	size_t index,dip,i3;
+	size_t index,dip;
 	TIME_TYPE tstart;
 	int i;
 #ifndef SPARSE
 	size_t local_nRows_tmp;
 	int j,k,ns;	
 	double tmp1,tmp2,tmp3;
+	double a, b, c; //coefficients determining the plane
+	double temp_plane; //used for a, b, c calculation
 	doublecomplex temp1, temp2, temp3;
 	double xr,yr,zr;  // dipole coordinates relative to sizeX. xr is inside (-1/2,1/2), others - based on aspect ratios
 	double xcoat,ycoat,zcoat,r2,ro2,z2,zshift,xshift;
@@ -2157,7 +2122,7 @@ void MakeParticle(void)
 	double dh=1.0/(2*boxX); // half of dipole, divided by grid size
 	double vf;   // volume fraction of a boundary dipole
 	double nvol; // total volume of non-void dipoles (corrected for volume fraction) in dipoles
-	static double * restrict DipoleCoord_tmp,* restrict volfrac_tmp;
+	static double * restrict DipoleCoord_tmp,* restrict volfrac_tmp,* restrict plSec_tmp;
 	static unsigned short * restrict position_tmp;
 	unsigned short us_tmp;
 	TIME_TYPE tgran;
@@ -2168,6 +2133,7 @@ void MakeParticle(void)
 	 * variables defined above.
 	 */
 	tstart=GET_TIME();
+	//index=0;
 	
 	cX=(boxX-1)/2.0;
 	cY=(boxY-1)/2.0;
@@ -2184,6 +2150,8 @@ void MakeParticle(void)
 	MALLOC_VECTOR(position_tmp,ushort,local_nRows_tmp,ALL);
 	MALLOC_VECTOR(DipoleCoord_tmp, double, local_nRows_tmp, ALL);
 	MALLOC_VECTOR(volfrac_tmp,double,local_Ndip,ALL);
+	MALLOC_VECTOR(plSec_tmp, double, local_nRows_tmp, ALL);
+	// !!! TODO: instead of volfrac, one should use the coefficients of the tangent plane
 
 	for(k=local_z0;k<local_z1_coer;k++) for(j=0;j<boxY;j++) for(i=0;i<boxX;i++) {
 		xj=2*jagged*(i/jagged)+jagged-boxX;
@@ -2198,6 +2166,8 @@ void MakeParticle(void)
 		xr=(0.5*xj)/boxX;
 		yr=(0.5*yj)/boxX*(rectScaleY/rectScaleX);
 		zr=(0.5*zj)/boxX*(rectScaleZ/rectScaleX);
+		//yr=(0.5*yj)/boxX;
+		//zr=(0.5*zj)/boxX;
 
 		mat=Nmat; // corresponds to void
 		vf=1;
@@ -2338,8 +2308,17 @@ void MakeParticle(void)
 										mat=0;
 										if (r2+2*tmp1>0.25)
 										{
-											vf=CubeSphereSection(fabs(xr)-dh,fabs(yr)-dh,fabs(zr)-dh,r2,0.25,2*dh);
-											//vf=1;
+											//vf=CubeSphereSection(fabs(xr)-dh,fabs(yr)-dh,fabs(zr)-dh,r2,0.25,2*dh);
+											vf=0;
+											if (r2==0) a=b=c=2*dh/sqrt(0.75); //may happen for very small grid sizes
+											else
+											{
+												temp_plane = 2*dh/(sqrt(r2*0.25)-r2);
+												a = temp_plane*(fabs(xr)-dh);
+												b = temp_plane*(fabs(yr)-dh);
+												c = temp_plane*(fabs(zr)-dh);
+											}
+
 										}
 									}
 				break;
@@ -2363,6 +2342,9 @@ void MakeParticle(void)
 		DipoleCoord_tmp[3*index]=i-cX;
 		DipoleCoord_tmp[3*index+1]=j-cY;
 		DipoleCoord_tmp[3*index+2]=k-cZ;
+		plSec_tmp[3*index]=a;
+		plSec_tmp[3*index+1]=b;
+		plSec_tmp[3*index+2]=c;
 		material_tmp[index]=(unsigned char)mat;
 		volfrac_tmp[index] = vf;
 		index++;
@@ -2473,19 +2455,25 @@ void MakeParticle(void)
 	MALLOC_VECTOR(position,ushort,local_nRows,ALL);
 	MALLOC_VECTOR(refind,complex,local_nvoid_Ndip,ALL);
 	MALLOC_VECTOR(DipoleCoord,double,local_nRows,ALL);
-	memory+=(3*sizeof(short int)+4*sizeof(double)+sizeof(char))*local_nvoid_Ndip;
+	MALLOC_VECTOR(plSec,double,local_nRows,ALL);
+	memory+=(3*sizeof(short int)+5*sizeof(double)+sizeof(char))*local_nvoid_Ndip;
 	// copy nontrivial part of arrays and compute (effective) refractive index
 	index=0;
 	nvol=0;
 	FILE *fp;
-	fp = fopen("refind.txt", "w+");
+	fp = fopen("vf.txt", "w+");
 	for (dip=0;dip<local_Ndip;dip++) if (material_tmp[dip]<Nmat) {
 	//	double real_temp_2, real_temp_3;
 		mat=material[index]=material_tmp[dip];
 		vMultScal(gridspace,DipoleCoord_tmp+3*dip,DipoleCoord+3*index);
+		vMultScal(1.0,plSec_tmp+3*dip,plSec+3*index);
 		memcpy(position+3*index,position_tmp+3*dip,3*sizeof(short int));
 		// !!! TODO: this is currently incompatible with anisotropy
 				vf=volfrac_tmp[dip];
+				if (vf==0)
+				{
+					vf=CubePlaneSection(plSec[3*index], plSec[3*index+1], plSec[3*index+2]);
+				}
 				nvol+=vf;
 				//if (vf<=0.5) vf=0.0001;
 				//else vf=1;
@@ -2508,7 +2496,7 @@ void MakeParticle(void)
 					temp1=temp2/temp3;
 					refind[index]=csqrt(temp1);
 				}
-				fprintf(fp, "refind[%llu]= %.6e + i * %.6e\n", index, creal(refind[index]), cimag(refind[index]));
+				fprintf(fp, "vf[%llu]= %.6e\n", index, vf);
 				index++;
 
 	}
@@ -2524,6 +2512,7 @@ void MakeParticle(void)
 	Free_general(DipoleCoord_tmp);
 	Free_general(volfrac_tmp);
 	Free_general(position_tmp);
+	Free_general(plSec_tmp);
 	if (shape==SH_AXISYMMETRIC) {
 		for (ns=0;ns<contNseg;ns++) FreeContourSegment(contSeg+ns);
 		Free_general(contSegRoMin);
@@ -2532,26 +2521,27 @@ void MakeParticle(void)
 #else
 	position=position_full + 3*local_nvoid_d0;
 #endif // SPARSE
-	// initialize DipoleCoord
-	MALLOC_VECTOR(DipoleCoord,double,local_nRows,ALL);
-	memory+=3*sizeof(double)*local_nvoid_Ndip;
-	double minZco=0; // minimum Z coordinates of dipoles
-	for (index=0; index<local_nvoid_Ndip; index++) {
-		i3=3*index;
-		DipoleCoord[i3] = (position[i3]-cX)*dsX;
-		DipoleCoord[i3+1] = (position[i3+1]-cY)*dsY;
-		DipoleCoord[i3+2] = (position[i3+2]-cZ)*dsZ;
-		if (minZco>DipoleCoord[i3+2]) minZco=DipoleCoord[i3+2]; // crude way to find the minimum on the way
-	}
+/*	// initialize DipoleCoord
+*	MALLOC_VECTOR(DipoleCoord,double,local_nRows,ALL);
+*	memory+=3*sizeof(double)*local_nvoid_Ndip;
+*	double minZco=0; // minimum Z coordinates of dipoles
+*	for (index=0; index<local_nvoid_Ndip; index++) {
+*		i3=3*index;
+*		DipoleCoord[i3] = (position[i3]-cX)*dsX;
+*		DipoleCoord[i3+1] = (position[i3+1]-cY)*dsY;
+*		DipoleCoord[i3+2] = (position[i3+2]-cZ)*dsZ;
+*		if (minZco>DipoleCoord[i3+2]) minZco=DipoleCoord[i3+2]; // crude way to find the minimum on the way
+*	}
+*/
 	/* test that particle is wholly above the substrate; strictly speaking, we test dipole centers to be above the
 	 * substrate - hsub+minZco>0, while the geometric boundary of the particle may still intersect with the substrate.
 	 * However, the current test is sufficient to ensure that corresponding routines to calculate reflected Green's
 	 * tensor do not fail. And accuracy of the DDA itself is anyway questionable when some of the dipoles are very close
 	 * to the substrate (whether they cross it or not).
 	 */
-	if (surface && hsub<=-minZco) LogError(ALL_POS,"The particle must be entirely above the substrate. There exist a "
-		"dipole with z="GFORMDEF" (relative to the center), making specified height of the center ("GFORMDEF") too "
-		"small",minZco,hsub);
+	//if (surface && hsub<=-minZco) LogError(ALL_POS,"The particle must be entirely above the substrate. There exist a "
+//		"dipole with z="GFORMDEF" (relative to the center), making specified height of the center ("GFORMDEF") too "
+//		"small",minZco,hsub);
 	// save geometry
 	if (save_geom)
 #ifndef SPARSE 

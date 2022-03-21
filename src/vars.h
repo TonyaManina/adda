@@ -32,6 +32,7 @@ extern int boxX,boxY,boxZ;
 extern size_t boxXY;
 extern double gridspace,dsX,dsY,dsZ,rectScaleX,rectScaleY,rectScaleZ,dipvol,kd,kdX,kdY,kdZ,ka_eq,inv_G,WaveNum;
 extern double * restrict DipoleCoord;
+extern double * restrict plSec;
 extern doublecomplex * restrict refind;
 extern doublecomplex * restrict cc_sqrt;
 extern double memory,memPeak;
