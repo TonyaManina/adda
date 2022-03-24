@@ -2252,7 +2252,48 @@ void MakeParticle(void)
 				}
 				break;
 			case SH_CYLINDER:
-				if(xr*xr+yr*yr<=0.25 && fabs(zr)<=hdratio) mat=0;
+				//if(xr*xr+yr*yr<=0.25 && fabs(zr)<=hdratio) mat=0;
+				tmp1 = 2*dh*(fabs(xr)+fabs(yr));
+				r2 = xr*xr + yr*yr - tmp1 + 2*dh*dh;
+				if (r2 <= 0.25 && (fabs(zr)-dh) <= hdratio)
+					{
+						mat = 0;
+						if (r2+2*tmp1 > 0.25 && (fabs(zr)+dh) < hdratio)
+						{
+							vf=0;
+							if (r2==0)
+								{
+								a=b=2*dh/sqrt(0.75); //may happen for very small grid sizes
+								c=0;
+								}
+
+							temp_plane = 2*dh/(sqrt(r2*0.25)-r2);
+							a = temp_plane*(fabs(xr)-dh);
+							b = temp_plane*(fabs(yr)-dh);
+							c = 0;
+						}
+						if (r2+2*tmp1 > 0.25 && (fabs(zr)+dh) > hdratio)
+						{
+							vf=0;
+							if (r2==0) a=b=c=2*dh/sqrt(0.75); //may happen for very small grid sizes
+							tmp1 = 2*dh*(fabs(xr)+fabs(yr)+fabs(zr));
+							r2 = xr*xr + yr*yr + zr*zr - tmp1 + 3*dh*dh;
+							temp_plane = 2*dh/(sqrt(r2*0.25)-r2);
+							a = temp_plane*(fabs(xr)-dh);
+							b = temp_plane*(fabs(yr)-dh);
+							c = temp_plane*(fabs(zr)-dh);
+						}
+						if (r2+2*tmp1 < 0.25 && (fabs(zr)+dh) > hdratio)
+						{
+							vf=0;
+							if (r2==0) a=b=c=2*dh/sqrt(0.75); //may happen for very small grid sizes
+							a = 0;
+							b = 0;
+							if (zr>=0) c = 1/hdratio;
+							else c=-1/hdratio;
+						}
+					}
+
 				break;
 			case SH_EGG:
 				ro2=xr*xr+yr*yr;
@@ -2303,24 +2344,24 @@ void MakeParticle(void)
 				//if (xr*xr+yr*yr+zr*zr<=0.25) mat=0;
 				tmp1 = 2*dh*(fabs(xr)+fabs(yr)+fabs(zr));
 				r2=xr*xr+yr*yr+zr*zr-tmp1+3*dh*dh; // distance squared to the closest corner
-									if (r2<0.25)
-									{
-										mat=0;
-										if (r2+2*tmp1>0.25)
-										{
-											//vf=CubeSphereSection(fabs(xr)-dh,fabs(yr)-dh,fabs(zr)-dh,r2,0.25,2*dh);
-											vf=0;
-											if (r2==0) a=b=c=2*dh/sqrt(0.75); //may happen for very small grid sizes
-											else
-											{
-												temp_plane = 2*dh/(sqrt(r2*0.25)-r2);
-												a = temp_plane*(fabs(xr)-dh);
-												b = temp_plane*(fabs(yr)-dh);
-												c = temp_plane*(fabs(zr)-dh);
-											}
+				if (r2<0.25)
+				 {
+					mat=0;
+					if (r2+2*tmp1>0.25)
+						{
+						//vf=CubeSphereSection(fabs(xr)-dh,fabs(yr)-dh,fabs(zr)-dh,r2,0.25,2*dh);
+							vf=0;
+							if (r2==0) a=b=c=2*dh/sqrt(0.75); //may happen for very small grid sizes
+							else
+								{
+									temp_plane = 2*dh/(sqrt(r2*0.25)-r2);
+									a = temp_plane*(fabs(xr)-dh);
+									b = temp_plane*(fabs(yr)-dh);
+									c = temp_plane*(fabs(zr)-dh);
+								}
 
-										}
-									}
+							}
+					}
 				break;
 			case SH_SPHEREBOX:
 				if (xr*xr+yr*yr+zr*zr<=coat_r2) mat=1;
@@ -2456,7 +2497,8 @@ void MakeParticle(void)
 	MALLOC_VECTOR(refind,complex,local_nvoid_Ndip,ALL);
 	MALLOC_VECTOR(DipoleCoord,double,local_nRows,ALL);
 	MALLOC_VECTOR(plSec,double,local_nRows,ALL);
-	memory+=(3*sizeof(short int)+5*sizeof(double)+sizeof(char))*local_nvoid_Ndip;
+	MALLOC_VECTOR(volfrac,double,local_nvoid_Ndip,ALL);
+	memory+=(3*sizeof(short int)+6*sizeof(double)+sizeof(char))*local_nvoid_Ndip;
 	// copy nontrivial part of arrays and compute (effective) refractive index
 	index=0;
 	nvol=0;
@@ -2466,10 +2508,12 @@ void MakeParticle(void)
 	//	double real_temp_2, real_temp_3;
 		mat=material[index]=material_tmp[dip];
 		vMultScal(gridspace,DipoleCoord_tmp+3*dip,DipoleCoord+3*index);
-		vMultScal(1.0,plSec_tmp+3*dip,plSec+3*index);
+		//vMultScal(1.0,plSec_tmp+3*dip,plSec+3*index);
 		memcpy(position+3*index,position_tmp+3*dip,3*sizeof(short int));
+		memcpy(plSec+3*index,plSec_tmp+3*dip,3*sizeof(double));
+		memcpy(volfrac+index,volfrac_tmp+dip,sizeof(double));
 		// !!! TODO: this is currently incompatible with anisotropy
-				vf=volfrac_tmp[dip];
+				vf=volfrac[index];
 				if (vf==0)
 				{
 					vf=CubePlaneSection(plSec[3*index], plSec[3*index+1], plSec[3*index+2]);
