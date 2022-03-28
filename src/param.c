@@ -117,6 +117,7 @@ bool calc_asym;       // Calculate the asymmetry-parameter
 bool calc_mat_force;  // Calculate the scattering force by matrix-evaluation
 bool store_force;     // Write radiation pressure per dipole to file
 bool store_ampl;      // Write amplitude matrix to file
+//bool use_wd;          // use weighted discretization
 int phi_int_type;     // type of phi integration (each bit determines whether to calculate with different multipliers)
 // used in calculator.c
 bool avg_inc_pol;            // whether to average CC over incident polarization
@@ -402,6 +403,7 @@ PARSE_FUNC(sym);
 PARSE_FUNC(test);
 PARSE_FUNC(V) ATT_NORETURN;
 PARSE_FUNC(vec);
+PARSE_FUNC(weighted_discr); //new function for wd
 PARSE_FUNC(yz);
 /* TO ADD NEW COMMAND LINE OPTION
  * add a function prototype to this list. Add a line 'PARSE_FUNC(option_name);' in alphabetical order. It will be
@@ -666,6 +668,7 @@ static struct opt_struct options[]={
 	{PAR(V),"","Show ADDA version, compiler used to build this executable, build options, and copyright information",
 		0,NULL},
 	{PAR(vec),"","Calculate the not-normalized asymmetry vector",0,NULL},
+	{PAR(weighted_discr),"","Using weighted discretization for the next shapes: sphere, cylinder",0,NULL},
 	{PAR(yz),"","Explicitly enables calculation of the scattering in the yz-plane (in incident-wave reference frame). "
 		"It can also be implicitly enabled by other options.",0,NULL}
 	/* TO ADD NEW COMMAND LINE OPTION
@@ -1776,6 +1779,15 @@ PARSE_FUNC(vec)
 {
 	calc_vec = true;
 }
+PARSE_FUNC(weighted_discr)
+{
+	//if (rectDip)
+	//	PrintErrorHelpSafe("Weighted discretization does not support rectangular dipoles");
+	//if (!(shape == SH_SPHERE || shape == SH_CYLINDER))
+	//	PrintErrorHelpSafe("Weighted discretization does not support '%s', allowed shapes are: sphere, cylinder.", shapename);
+
+		use_wd = true;
+}
 PARSE_FUNC(yz)
 {
 	yz_used = true;
@@ -1947,6 +1959,7 @@ void InitVariables(void)
 	calc_vec=false;
 	calc_asym=false;
 	calc_mat_force=false;
+	use_wd = false;
 	store_force=false;
 	store_mueller=true;
 	store_ampl=false;
@@ -2148,6 +2161,10 @@ void VariablesInterconnect(void)
 		if (Nmat%3!=0)
 			PrintError("When '-anisotr' is used 6 numbers (3 complex values) should be given per each domain");
 		else Nmat=Nmat/3;
+	}
+	if (use_wd) {
+		if (rectDip) PrintError("Weighted discretization does not support rectangular dipoles");
+		if (!(shape == SH_SPHERE || shape == SH_CYLINDER)) PrintErrorHelpSafe("Weighted discretization does not support '%s', allowed shapes are: sphere, cylinder.", shapename);
 	}
 	if (chp_type!=CHP_NONE) {
 		if (chp_time==UNDEF && chp_type!=CHP_ALWAYS) PrintError("You must specify time for this checkpoint type");

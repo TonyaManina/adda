@@ -2252,7 +2252,8 @@ void MakeParticle(void)
 				}
 				break;
 			case SH_CYLINDER:
-				//if(xr*xr+yr*yr<=0.25 && fabs(zr)<=hdratio) mat=0;
+				if (use_wd)
+				{
 				tmp1 = 2*dh*(fabs(xr)+fabs(yr));
 				r2 = xr*xr + yr*yr - tmp1 + 2*dh*dh;
 				if (r2 <= 0.25 && (fabs(zr)-dh) <= hdratio)
@@ -2293,6 +2294,8 @@ void MakeParticle(void)
 							else c=-1/hdratio;
 						}
 					}
+				}
+				else if(xr*xr+yr*yr<=0.25 && fabs(zr)<=hdratio) mat=0;
 
 				break;
 			case SH_EGG:
@@ -2342,6 +2345,8 @@ void MakeParticle(void)
 			case SH_READ: break; // just to have a complete set of cases; this cases is treated separately below
 			case SH_SPHERE:
 				//if (xr*xr+yr*yr+zr*zr<=0.25) mat=0;
+				if (use_wd)
+				{
 				tmp1 = 2*dh*(fabs(xr)+fabs(yr)+fabs(zr));
 				r2=xr*xr+yr*yr+zr*zr-tmp1+3*dh*dh; // distance squared to the closest corner
 				if (r2<0.25)
@@ -2362,6 +2367,8 @@ void MakeParticle(void)
 
 							}
 					}
+				}
+				else if (xr*xr+yr*yr+zr*zr<=0.25) mat=0;
 				break;
 			case SH_SPHEREBOX:
 				if (xr*xr+yr*yr+zr*zr<=coat_r2) mat=1;

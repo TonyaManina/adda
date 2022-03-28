@@ -45,7 +45,7 @@ extern bool symX,symY,symZ,symR;
 
 // flags
 extern bool prognosis,yzplane,scat_plane,store_mueller,all_dir,scat_grid,phi_integr,sh_granul,reduced_FFT,orient_avg,
-	load_chpoint,beam_asym,anisotropy,save_memory,ipr_required,rectDip;
+	load_chpoint,beam_asym,anisotropy,save_memory,ipr_required,rectDip,use_wd;
 extern double propAlongZ;
 
 // 3D vectors
