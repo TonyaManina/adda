@@ -496,6 +496,14 @@ static inline double vNorm(const double a[static 3])
 	return sqrt(a[0]*a[0]+a[1]*a[1]+a[2]*a[2]);
 }
 
+//============================================================
+
+static inline double AngleCos(const double v[static 3], const double u[static 3])
+// cosine of angle between vectors u and v
+{
+	return DotProd(v, u) / vNorm(v) * vNorm(u);
+}
+
 //======================================================================================================================
 
 static inline void CrossProd(const double a[static 3],const double b[static 3],double c[static 3])

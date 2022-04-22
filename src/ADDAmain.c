@@ -18,6 +18,7 @@
 #include "debug.h"
 #include "io.h"
 #include "vars.h"
+#include "volfrac.h"
 // system headers
 #include <stdio.h>
 #include <stdlib.h>
@@ -90,6 +91,10 @@ int main(int argc,char **argv)
 	// Initialize FFT grid and its subdivision over processors
 	ParSetup();
 	// MakeParticle; initialize dpl and local_nRows
+
+	TestVolFrac();
+	return 0; // for test purposes
+
 	MakeParticle();
 	D("Make particle finished");
 	// Print info to stdout and logfile

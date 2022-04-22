@@ -385,7 +385,7 @@ static inline double MassaIntegral(const double a,const double b,const double c)
 
 //======================================================================================================================
 
-static void CoupleConstant(doublecomplex *mrel,const enum incpol which,doublecomplex res[static 3])
+static void CoupleConstant(doublecomplex *mrel,const enum incpol which,doublecomplex res[static 6])
 /* Input is relative refractive index (mrel) - either one or three components (for anisotropic). incpol is relevant only
  * for LDR without avgpol. res is three values (diagonal of polarizability tensor).
  *
@@ -589,7 +589,7 @@ static void InitCC(const enum incpol which)
 {
 	int i,j;
 	doublecomplex m;
-	doublecomplex cc[3]; // couple constant
+	doublecomplex cc[6]; // couple constant
 		size_t dip;
 
 		// !!! TODO: this probably needs optimization

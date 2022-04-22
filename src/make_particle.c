@@ -24,6 +24,7 @@
 #include "timing.h"
 #include "types.h"
 #include "vars.h"
+#include "volfrac.h"
 // 3rd party headers
 #include "mt19937ar.h"
 // system headers
@@ -73,7 +74,7 @@ double gr_vf_real;               // actual granules volume fraction
 size_t mat_count[MAX_NMAT+1];    // number of dipoles in each domain
 
 // LOCAL VARIABLES
-
+# define M_PI		3.14159265358979323846	/* pi */
 static const char geom_format[]="%d %d %d\n";              // format of the geom file
 static const char geom_format_ext[]="%d %d %d %d\n";       // extended format of the geom file
 /* DDSCAT shape formats; several format are used, since first variable is unpredictable and last two are not actually
@@ -1980,7 +1981,7 @@ void InitShape(void)
 
 //======================================================================================================================
 //added on 5.01.22.
-static inline bool EdgeIn(int i,int j,double nv[8],double res[3])
+bool EdgeIn(int i,int j,double nv[8],double res[3])
 /* Finds intersection of plane n.r=1 with edges unit cube. Coordinates of the cube vertices are
  * given by static array v below. n is provided by its scalar products with v - by vector nv.
  * i and j are indices of adjacent vertices, defining the edge. Returns true if intersection is
@@ -2095,6 +2096,20 @@ double CubePlaneSection(double a,double b,double c)
 
 //==========================================================
 
+void Sort(int* indxs, double* values, int n) {
+	double boof;
+	for (int i = 0; i<n; i++){
+		for (int j=i+1; j<n; j++){
+			double vi = values[indxs[i]], vj = values[indxs[j]];
+			if (vi>vj) {
+				boof=indxs[i];
+				indxs[i]=indxs[j];
+				indxs[j]=boof;
+			}
+		}
+	}
+}
+//==========================================================
 void MakeParticle(void)
 // creates a particle; initializes all dipoles counts, dpl, dipole sizes
 {
@@ -2107,6 +2122,8 @@ void MakeParticle(void)
 	int j,k,ns;	
 	double tmp1,tmp2,tmp3;
 	double a, b, c; //coefficients determining the plane
+	double norm[3]; //norm vector of the intersecting plane
+	double Ls[9]={0,0,0,0,0,0,0,0,0}; //outer part of depolarization tensor
 	double temp_plane; //used for a, b, c calculation
 	doublecomplex temp1, temp2, temp3;
 	double xr,yr,zr;  // dipole coordinates relative to sizeX. xr is inside (-1/2,1/2), others - based on aspect ratios
@@ -2290,8 +2307,9 @@ void MakeParticle(void)
 							if (r2==0) a=b=c=2*dh/sqrt(0.75); //may happen for very small grid sizes
 							a = 0;
 							b = 0;
-							if (zr>=0) c = 1/hdratio;
-							else c=-1/hdratio;
+							c = 1/hdratio;
+							//if (zr>=0) c = 1/hdratio;
+							//else c=-1/hdratio;
 						}
 					}
 				}
@@ -2345,8 +2363,8 @@ void MakeParticle(void)
 			case SH_READ: break; // just to have a complete set of cases; this cases is treated separately below
 			case SH_SPHERE:
 				//if (xr*xr+yr*yr+zr*zr<=0.25) mat=0;
-				if (use_wd)
-				{
+				//if (use_wd)
+				//{
 				tmp1 = 2*dh*(fabs(xr)+fabs(yr)+fabs(zr));
 				r2=xr*xr+yr*yr+zr*zr-tmp1+3*dh*dh; // distance squared to the closest corner
 				if (r2<0.25)
@@ -2367,8 +2385,8 @@ void MakeParticle(void)
 
 							}
 					}
-				}
-				else if (xr*xr+yr*yr+zr*zr<=0.25) mat=0;
+			//	}
+			//	else if (xr*xr+yr*yr+zr*zr<=0.25) mat=0;
 				break;
 			case SH_SPHEREBOX:
 				if (xr*xr+yr*yr+zr*zr<=coat_r2) mat=1;
@@ -2510,7 +2528,7 @@ void MakeParticle(void)
 	index=0;
 	nvol=0;
 	FILE *fp;
-	fp = fopen("vf.txt", "w+");
+	fp = fopen("vf+Ls.txt", "w+");
 	for (dip=0;dip<local_Ndip;dip++) if (material_tmp[dip]<Nmat) {
 	//	double real_temp_2, real_temp_3;
 		mat=material[index]=material_tmp[dip];
@@ -2547,7 +2565,7 @@ void MakeParticle(void)
 					temp1=temp2/temp3;
 					refind[index]=csqrt(temp1);
 				}
-				fprintf(fp, "vf[%llu]= %.6e\n", index, vf);
+				fprintf(fp, "vf[%llu]= %.6e\n, Ls = %.6e %.6e %.6e\n %.6e %.6e %.6e\n %.6e %.6e %.6e\n", index, vf, Ls[0], Ls[1], Ls[2], Ls[3], Ls[4], Ls[5], Ls[6], Ls[7], Ls[8]);
 				index++;
 
 	}
@@ -2564,6 +2582,8 @@ void MakeParticle(void)
 	Free_general(volfrac_tmp);
 	Free_general(position_tmp);
 	Free_general(plSec_tmp);
+
+
 	if (shape==SH_AXISYMMETRIC) {
 		for (ns=0;ns<contNseg;ns++) FreeContourSegment(contSeg+ns);
 		Free_general(contSegRoMin);
