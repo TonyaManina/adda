@@ -187,17 +187,14 @@ int ReorderPoints(const double p[12][3], int k, const double n[3], const double 
 //======================================================================================================================
 
 void CalculationOfLsTensor(const double p[12][3], int k, const double n[3], double L[9] ) {
-	if (k<3) {
-		for (int j = 0; j<9; j++) L[j]+=0;
-	}
-	else {
+	if (k<3) return;
 	//calculation of h
-	double h[3] = {0,0,0}, q[3], c[3], boof[3];
+	double hlog[3] = {0,0,0}, q[3]= {0,0,0}, c[3], boof[3]={0,0,0};
 	double logarifm;
 	double u[12][3];
 
-    PointsCenter(p, k, c);
-	//c[0]=0.5; c[1]=0.5; c[2]=0.5;
+    //PointsCenter(p, k, c);
+	c[0]=0.5; c[1]=0.5; c[2]=0.5;
     for (int j=0; j<k; j++)
     	 vSubtr(p[j],c,u[j]);
     vSubtr(p[0],c,u[k]);
@@ -206,15 +203,16 @@ void CalculationOfLsTensor(const double p[12][3], int k, const double n[3], doub
     	vSubtr(u[j+1], u[j], boof);
     	double boofNorm = vNorm(boof);
     	vMultScal(1.0 / boofNorm, boof, q);
-    	logarifm=(DotProd(u[j+1],q)+vNorm(u[j+1]))/(DotProd(u[j],q)+vNorm(u[j]));
+    	logarifm=log((DotProd(u[j+1],q)+vNorm(u[j+1]))/(DotProd(u[j],q)+vNorm(u[j])));
     	vMultScal(logarifm,q,q);
-    	vAdd(h,q,h);
+    	vAdd(hlog,q,hlog);
+
     }
 	//calculation of omega
 	double omega = 0;
-	c[0]=0.5; c[1]=0.5; c[2]=0.5;
+	//c[0]=0.5; c[1]=0.5; c[2]=0.5;
 	for (int j=0; j<k; j++) {
-		vSubtr(p[j],c,u[j]);
+		//vSubtr(p[j],c,u[j]);
     	double uNorm=vNorm(u[j]);
     	vMultScal(1.0 / uNorm, u[j], u[j]);
     }
@@ -245,24 +243,28 @@ void CalculationOfLsTensor(const double p[12][3], int k, const double n[3], doub
     	}
     }
     //Calculation of Ls
-    double prod[3];
-    CrossProd(h,n,prod);
-    L[0]=L[0]-prod[0]*n[0]+omega*n[0]*n[0]; L[1]=L[1]-prod[0]*n[1]+omega*n[0]*n[1]; L[2]=L[2]-prod[0]*n[2]+omega*n[0]*n[2];
-    L[3]=L[3]-prod[1]*n[0]+omega*n[1]*n[0]; L[4]=L[4]-prod[1]*n[1]+omega*n[1]*n[1]; L[5]=L[5]-prod[1]*n[2]+omega*n[1]*n[2];
-    L[6]=L[6]-prod[2]*n[0]+omega*n[2]*n[0]; L[7]=L[7]-prod[2]*n[1]+omega*n[2]*n[1]; L[8]=L[8]-prod[2]*n[2]+omega*n[2]*n[2];
+    double prod[3], omegan[3];
+    CrossProd(n,hlog,prod);
+    vMultScal(omega, n, omegan);
+    vAdd(prod, omegan, prod);
 
-    }
+    L[0]+=prod[0]*n[0]; L[1]+=prod[0]*n[1]; L[2]+=prod[0]*n[2];
+    L[3]+=prod[1]*n[0]; L[4]+=prod[1]*n[1]; L[5]+=prod[1]*n[2];
+    L[6]+=prod[2]*n[0]; L[7]+=prod[2]*n[1]; L[8]+=prod[2]*n[2];
+
 }
 //======================================================================================================================
 void TestVolFrac(void) {
 	double nv[8];
 	double Ls[9] = {0,0,0,0,0,0,0,0,0};
-	double n[3] = {1, 2, 3};
+	double n[3] = {0.25, 0.5, 0.75};
 	double UnsortedEdgePoints[6][12][3];
 	double SortedEdgePoints[6][12][3];
+	double CubeEdgePoints[6][12][3];
 	int NumberOfPoints[6];
 	double intersections[12][3];
 	double pOrdered[12][3];
+	double pOrdered_inv[12][3];
 	int counting = 0, accumCounting = 0;
 	double intersectionCounting = 0;
 	bool CenterUpperPlane = PointUpperPlane(CubeCenter, n);
@@ -291,10 +293,22 @@ void TestVolFrac(void) {
 	for (int i=0; i<6; i++) {
 		NumberOfPoints[i] = ReorderPoints(UnsortedEdgePoints[i], NumberOfPoints[i], CubeEdgeNorm[i], SortedEdgePoints[i]);
 	}
+//	for (int i=0; i<6; i++) {
+//		CalculationOfLsTensor(CubeEdgePoints[i], 4, CubeEdgeNorm[i], Ls );
+//	}
 	for (int i=0; i<6; i++) {
 		CalculationOfLsTensor(SortedEdgePoints[i], NumberOfPoints[i], CubeEdgeNorm[i], Ls );
 	}
+	if (CenterUpperPlane == false){
+		vInvSign(n);
+		for (int i=0; i<k; i++){
+			vCopy(pOrdered[i],pOrdered_inv[k-i-1]);
+		}
+		CalculationOfLsTensor(pOrdered_inv, k, n, Ls );
+	}
+	else {
 		CalculationOfLsTensor(pOrdered, k, n, Ls );
+	}
 	PrintVector(intersections[0]);
 	int dsfdasfasd = 0;
 	// k = amount of intersection points
