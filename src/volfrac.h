@@ -10,8 +10,9 @@
 
 bool PointUpperPlane(const double p[static 3], const double plane_n[static 3]);
 int CountEdgePlaneIntersections(int edgeIdx, const double n[3], const double intersections[2][3]);
-void TestVolFrac(void);
-
+void TestVolFrac(doublecomplex refind, double vf);
+void TestMatrixoops(void);
+void TestCubicEq(void);
 bool EdgeIn(int i,int j,double nv[8],double res[3]);
 
 

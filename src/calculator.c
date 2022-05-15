@@ -398,6 +398,8 @@ static void CoupleConstant(doublecomplex *mrel,const enum incpol which,doublecom
  * calculated from one m) or to another one, then a scalar function is used. See comments in the code for more details.
  */
 {
+
+
 	if (rectDip) {
 		int i;
 		double a,b,c;
@@ -500,6 +502,13 @@ static void CoupleConstant(doublecomplex *mrel,const enum incpol which,doublecom
 		if (!orient_avg && IFROOT) PrintBoth(logfile, "CoupleConstant: "CFORM3V"\n", REIM3V(res));
 	} 
 	else {
+		if (use_wd){
+			doublecomplex alpha[3][3];
+			//ComputePolarizability(mrel[0], volfrac[index], alpha, plSec+3*index);
+			//currently incompationable with anisotropy
+			//res[i]=dipvol*
+		}
+		else{
 		double ka,kd2,S;
 		int i;
 		bool asym; // whether polarizability is asymmetric (for isotropic m)
@@ -580,6 +589,7 @@ static void CoupleConstant(doublecomplex *mrel,const enum incpol which,doublecom
 			//if (!orient_avg && IFROOT) PrintBoth(logfile,"CoupleConstant: "CFORM"\n",REIM(res[0]));
 		}
 	}
+	}
 }
 
 //======================================================================================================================
@@ -597,7 +607,7 @@ static void InitCC(const enum incpol which)
 		{
 			// !!! TODO: anisotropy is not considered yet
 			CoupleConstant(refind+dip,which,cc);
-			cc_sqrt[dip]=csqrt(cc[0]);
+			cc_sqrt[dip]=csqrt(cc[0]); // TODO: matrix sqrt, ask why cc[0] always
 		}
 	for(i=0;i<Nmat;i++) {
 		//CoupleConstant(ref_index+Ncomp*i,which,cc[i]);

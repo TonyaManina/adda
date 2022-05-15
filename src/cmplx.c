@@ -43,7 +43,8 @@ static doublecomplex ieTable[46]; // table for imExpTable
  */
 #endif
 //======================================================================================================================
-
+doublecomplex Eye3[3][3] = {{1,0,0}, {0,1,0}, {0,0,1}};
+//======================================================================================================================
 void imExpTableInit()
 /* initialize table for imExp; it is slightly optimized (8 times) just for fun (run only once anyway)
  * further optimization is not done, since it will cause accuracy loss

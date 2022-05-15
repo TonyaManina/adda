@@ -92,7 +92,9 @@ int main(int argc,char **argv)
 	ParSetup();
 	// MakeParticle; initialize dpl and local_nRows
 
-	TestVolFrac();
+	//TestVolFrac();
+	//TestMatrixoops();
+	TestCubicEq();
 	return 0; // for test purposes
 
 	MakeParticle();

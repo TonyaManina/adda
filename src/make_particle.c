@@ -2542,6 +2542,7 @@ void MakeParticle(void)
 				if (vf==0)
 				{
 					vf=CubePlaneSection(plSec[3*index], plSec[3*index+1], plSec[3*index+2]);
+					volfrac[index]=vf;
 				}
 				nvol+=vf;
 				//if (vf<=0.5) vf=0.0001;

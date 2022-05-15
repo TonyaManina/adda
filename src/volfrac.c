@@ -41,7 +41,7 @@ const double cubeOrderedPoints[8][3] = {{0,0,0},{1,0,0},{0,1,0},{0,0,1},{1,0,1},
 const int cubeOrderedEdges[6][4] = {{0,2,5,1}, {0,3,6,2}, {3,4,7,6}, {4,1,5,7}, {0,1,4,3}, {2,6,7,5}};
 const double CubeCenter[3] = {0.5, 0.5, 0.5};
 const double CubeEdgeNorm[6][3] = {{0,0,-1},{-1,0,0},{0,0,1},{1,0,0},{0,-1,0},{0,1,0}};
-const double check = 0.0000001;
+const double check = 0.00000001;
 
 //======================================================================================================================
 
@@ -254,9 +254,12 @@ void CalculationOfLsTensor(const double p[12][3], int k, const double n[3], doub
 
 }
 //======================================================================================================================
-void TestVolFrac(void) {
+void TestVolFrac(doublecomplex refind, double vf) {
 	double nv[8];
+	doublecomplex chi_out[3] = {1,1,1}; //chi of outer space
+	doublecomplex alpha[3][3];
 	double Ls[9] = {0,0,0,0,0,0,0,0,0};
+	double T[3][3], chi_eff[3][3], LsMatr[3][3];
 	double n[3] = {0.25, 0.5, 0.75};
 	double UnsortedEdgePoints[6][12][3];
 	double SortedEdgePoints[6][12][3];
@@ -309,6 +312,33 @@ void TestVolFrac(void) {
 	else {
 		CalculationOfLsTensor(pOrdered, k, n, Ls );
 	}
+	vNormalize(n);
+
+	doublecomplex M=(SO_B1*kd*kd+I*2*kd*kd*kd/3)*vf,
+		chi_s = (refind - 1.0) / (4.0 * M_PI);
+
+	MatrSet(T, 0);
+	for (int i = 0; i<3; i++)
+		for (int j=0; j<3; j++)
+			T[i][j] = n[i]*n[j];
+	MatrMul(T, 1.0 / (refind * refind) - 1.0);
+	MatrAdd(T, Eye3);
+
+	MatrCopy(chi_eff, T);
+	MatrMul(chi_eff, vf * chi_s); //chi_eff[i*3+j]=(1-vf)*chi_out[i]*(i==j ? 1.0 : 0.0)+vf*1*T[i*3+j]; m_hoff not considered yet
+
+	MatrPlainTo3x3(Ls,LsMatr);
+	doublecomplex temp[3][3], temp1[3][3];
+	MatrCopy(temp,Eye3);
+	MatrMul(temp,-M);
+	MatrAdd(temp,LsMatr);
+	MatrMul(temp,chi_s);
+	MatrDotProd(temp,T,temp1);
+	MatrAdd(temp1, Eye3);
+	MatrInverse(temp1,temp);
+	MatrDotProd(chi_eff,temp,alpha);
+	MatrMul(alpha,dipvol);
+
 	PrintVector(intersections[0]);
 	int dsfdasfasd = 0;
 	// k = amount of intersection points
@@ -329,3 +359,33 @@ void TestVolFrac(void) {
 
 //======================================================================================================================
 
+void TestMatrixoops(void){
+	doublecomplex M[3][3] = {
+			{I,7,-1-2*I},
+			{1-I,1,-I},
+			{2+3*I,1+I,3+I}
+	};
+
+	doublecomplex M_inv[3][3];
+	MatrInverse(M,M_inv);
+	double ffjfhftjsgd = 0;
+}
+
+void TestCubicEq(void) {
+doublecomplex A[3][3] = {
+		{25,68,58},
+		{37,96,78},
+		{22,68,56}
+};
+doublecomplex lam[3];
+Eigenvalues(A,lam);
+doublecomplex B[3][3] = {
+		{0,0,0},
+		{0,0,0},
+		{0,0,0}
+};
+MatrixRoot(A, lam, B);
+doublecomplex sq[3][3];
+MatrDotProd(B,B,sq);
+	int dsdsd = 999;
+}
