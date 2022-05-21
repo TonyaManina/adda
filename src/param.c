@@ -1959,7 +1959,7 @@ void InitVariables(void)
 	calc_vec=false;
 	calc_asym=false;
 	calc_mat_force=false;
-	use_wd = false;
+	use_wd = true;
 	store_force=false;
 	store_mueller=true;
 	store_ampl=false;

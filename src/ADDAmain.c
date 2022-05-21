@@ -94,10 +94,16 @@ int main(int argc,char **argv)
 
 	//TestVolFrac();
 	//TestMatrixoops();
-	TestCubicEq();
-	return 0; // for test purposes
+	//TestSchur();
+	//TestTagaki();
+	//TestPolCalc();
+	//Testmatrinv();
+//	return 0; // for test purposes
 
 	MakeParticle();
+
+	//TestMatrixoops();
+
 	D("Make particle finished");
 	// Print info to stdout and logfile
 	PrintInfo();

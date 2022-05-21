@@ -21,6 +21,7 @@
 // system headers
 #include <math.h>
 #include <string.h>   // for memcpy
+#include <stdio.h>
 
 // Uncomment this to turn off calculation of imExp using tables
 //#define NO_IMEXP_TABLE
@@ -598,6 +599,16 @@ static inline void MatrVec(double matr[static 3][3],const double vec[static 3],d
 
 //======================================================================================================================
 
+static inline void MatrVecComplex(doublecomplex matr[static 3][3],const doublecomplex vec[static 3],doublecomplex res[static 3])
+// multiplication of matrix[3][3] by vec[3] (all real); res=matr.vec;
+{
+	res[0]=matr[0][0]*vec[0]+matr[1][0]*vec[1]+matr[2][0]*vec[2];
+	res[1]=matr[0][1]*vec[0]+matr[1][1]*vec[1]+matr[2][1]*vec[2];
+	res[2]=matr[0][2]*vec[0]+matr[1][2]*vec[1]+matr[2][2]*vec[2];
+}
+
+//======================================================================================================================
+
 static inline void MatrColumn(double matr[static 3][3],const int ind,double vec[static 3])
 // get ind's column of matrix[3][3] and store it into vec[3] (all real, ind starts from zero); vec=matr[.][ind];
 {
@@ -616,19 +627,28 @@ static inline void MatrPlainTo3x3(doublecomplex plain[static 9], doublecomplex m
 
 //======================================================================================================================
 
-static inline void MatrDotProd(doublecomplex A[static 3][3], doublecomplex B[static 3][3], doublecomplex C[static 3][3]) {
-	//C=A*B
-	for (int j = 0; j < 3; j++) // A * x_j = e_j
-		for (int i = 0; i < 3; i++) {
-			C[i][j]=0;
-			for (int k = 0; k<3; k++){
-				C[i][j]+=A[j][k]*B[k][i];
-			}
-		}
+static inline void DblPlainToCmplx3x3(double plain[static 9], doublecomplex m[static 3][3]) {
+	for (int i = 0; i < 3; i++)
+		for (int j = 0; j < 3; j++)
+			m[i][j] = plain[j*3 + i];
 }
 
 
 //======================================================================================================================
+
+static inline void MatrDotProd(int n, doublecomplex A[][n], doublecomplex B[][n], doublecomplex C[][n]) {
+	//C=A*B
+	for (int j = 0; j < n; j++) // A * x_j = e_j
+		for (int i = 0; i < n; i++) {
+			C[i][j]=0;
+			for (int k = 0; k < n; k++){
+				C[i][j] += A[k][j] * B[i][k];
+			}
+		}
+}
+
+//======================================================================================================================
+
 static inline void MatrSet(doublecomplex m[static 3][3], doublecomplex val) {
 	for (int i = 0; i < 3; i++)
 		for (int j = 0; j < 3; j++)
@@ -637,6 +657,43 @@ static inline void MatrSet(doublecomplex m[static 3][3], doublecomplex val) {
 
 //======================================================================================================================
 
+static inline void MatrVecMul(int n, doublecomplex A[][n], doublecomplex vec[3],doublecomplex res[3]) {
+	for (int row = 0; row < n; row++) {
+		res[row] = 0;
+		for (int col = 0; col < n; col++){
+			res[row] += A[col][row]*vec[col];
+		}
+	}
+}
+
+//======================================================================================================================
+
+static inline void DblMatrDotProd(int n, double A[][n], double B[][n], double C[][n]) {
+	//C=A*B
+	double a,b,c;
+	for (int row = 0; row < n; row++) { // A * x_j = e_j
+		for (int col = 0; col < n; col++) {
+			C[col][row]=0;
+			for (int k = 0; k < n; k++){
+				a = A[k][row];
+				b = B[col][k];
+				c = a * b;
+				C[col][row] += c;
+			}
+		}
+	}
+}
+
+
+//======================================================================================================================
+
+static inline void DblMatrSet(double m[static 3][3], double val) {
+	for (int i = 0; i < 3; i++)
+		for (int j = 0; j < 3; j++)
+			m[i][j] = val;
+}
+
+//======================================================================================================================
 static inline void MatrMul(doublecomplex m[static 3][3], doublecomplex val) {
 	for (int i = 0; i < 3; i++)
 		for (int j = 0; j < 3; j++)
@@ -679,9 +736,17 @@ static inline void Eigenvalues(doublecomplex m[static 3][3], doublecomplex lambd
 
 //======================================================================================================================
 
-static inline void MatrCopy(doublecomplex dest[static 3][3], doublecomplex src[static 3][3]) {
-	for (int i = 0; i < 3; i++)
-		for (int j = 0; j < 3; j++)
+static inline void MatrCopy(int n, doublecomplex dest[][n], doublecomplex src[][n]) {
+	for (int i = 0; i < n; i++)
+		for (int j = 0; j < n; j++)
+			dest[i][j] = src[i][j];
+}
+
+//======================================================================================================================
+
+static inline void DblMatrCopy(int n, double dest[][n], double src[][n]) {
+	for (int i = 0; i < n; i++)
+		for (int j = 0; j < n; j++)
 			dest[i][j] = src[i][j];
 }
 
@@ -695,7 +760,7 @@ static inline void MatrInverse(doublecomplex matr[static 3][3], doublecomplex in
 
 	for (int j = 0; j < 3; j++) // A * x_j = e_j
 		for (int i = 0; i < 3; i++) { // x_j [i]
-			MatrCopy(deltaMatr, matr);
+			MatrCopy(3, deltaMatr, matr);
 			for (int k = 0; k < 3; k++)
 				deltaMatr[i][k] = (k == j) ? 1.0 : 0.0;
 
@@ -720,7 +785,40 @@ static inline void MatrSubtract(doublecomplex dest[static 3][3], doublecomplex s
 		for (int i = 0; i < 3; i++) // x_j [i]
 			dest[i][j] -= src[i][j];
 }
-
+//======================================================================================================================
+static inline void MatrTranspose(doublecomplex dest[static 3][3], doublecomplex src[static 3][3]) {
+	for (int j = 0; j < 3; j++) // A * x_j = e_j
+		for (int i = 0; i < 3; i++) // x_j [i]
+			dest[i][j] = src[j][i];
+}
+//======================================================================================================================
+static inline void DblMatrTranspose(int n, double dest[][n], double src[][n]) {
+	for (int j = 0; j < n; j++) // A * x_j = e_j
+		for (int i = 0; i < n; i++) // x_j [i]
+			dest[i][j] = src[j][i];
+}
+//======================================================================================================================
+static inline void DblPrintMatr(int n, double v[][n]) {
+	double d = 0;
+	for (int j = 0; j < n; j++) {
+		for (int i = 0; i < n; i++) {
+			d = v[i][j];
+			printf("%.3f ", d);
+		}
+		printf("\n");
+	}
+}
+//======================================================================================================================
+static inline void DblcomplexPrintMatr(int n, doublecomplex v[][n]) {
+	doublecomplex d = 0;
+	for (int j = 0; j < n; j++) {
+		for (int i = 0; i < n; i++) {
+			d = v[i][j];
+			printf("%.3f + i%.3f ", creal(d), cimag(d));
+		}
+		printf("\n");
+	}
+}
 //======================================================================================================================
 static inline void MatrixRoot(doublecomplex M[static 3][3], doublecomplex lambda[static 3], doublecomplex Mroot[static 3][3]) {
 	doublecomplex E1[3][3] = {
@@ -739,19 +837,19 @@ static inline void MatrixRoot(doublecomplex M[static 3][3], doublecomplex lambda
 			{0,0,lambda[2]}
 	};
 	doublecomplex boof1[3][3], boof2[3][3], boof3[3][3];
-	MatrCopy(boof1, M); MatrSubtract(boof1, E1);
-	MatrCopy(boof2, M); MatrSubtract(boof2, E2);
-	MatrCopy(boof3, M); MatrSubtract(boof3, E3);
+	MatrCopy(3, boof1, M); MatrSubtract(boof1, E1);
+	MatrCopy(3, boof2, M); MatrSubtract(boof2, E2);
+	MatrCopy(3, boof3, M); MatrSubtract(boof3, E3);
 	doublecomplex C[3][3];
-	MatrDotProd(boof2,boof3,C);
+	MatrDotProd(3, boof2,boof3,C);
 	doublecomplex c = 1.0/((lambda[0]-lambda[1])*(lambda[0]-lambda[2]));
 	MatrMul(C,c*csqrt(lambda[0]));
 	MatrAdd(Mroot,C);
-	MatrDotProd(boof1,boof3,C);
+	MatrDotProd(3, boof1,boof3,C);
 	c = 1.0/((lambda[1]-lambda[2])*(lambda[1]-lambda[0]));
 	MatrMul(C,c*csqrt(lambda[1]));
 	MatrAdd(Mroot, C);
-	MatrDotProd(boof1,boof2,C);
+	MatrDotProd(3, boof1,boof2,C);
 	c = 1.0/((lambda[2]-lambda[0])*(lambda[2]-lambda[1]));
 	MatrMul(C,c*csqrt(lambda[2]));
 	MatrAdd(Mroot, C);

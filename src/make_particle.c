@@ -2363,8 +2363,8 @@ void MakeParticle(void)
 			case SH_READ: break; // just to have a complete set of cases; this cases is treated separately below
 			case SH_SPHERE:
 				//if (xr*xr+yr*yr+zr*zr<=0.25) mat=0;
-				//if (use_wd)
-				//{
+				if (use_wd)
+				{
 				tmp1 = 2*dh*(fabs(xr)+fabs(yr)+fabs(zr));
 				r2=xr*xr+yr*yr+zr*zr-tmp1+3*dh*dh; // distance squared to the closest corner
 				if (r2<0.25)
@@ -2385,8 +2385,8 @@ void MakeParticle(void)
 
 							}
 					}
-			//	}
-			//	else if (xr*xr+yr*yr+zr*zr<=0.25) mat=0;
+				}
+				else if (xr*xr+yr*yr+zr*zr<=0.25) mat=0;
 				break;
 			case SH_SPHEREBOX:
 				if (xr*xr+yr*yr+zr*zr<=coat_r2) mat=1;
@@ -2543,6 +2543,7 @@ void MakeParticle(void)
 				{
 					vf=CubePlaneSection(plSec[3*index], plSec[3*index+1], plSec[3*index+2]);
 					volfrac[index]=vf;
+					//volfrac[index]=1.0;// - 10e-5;
 				}
 				nvol+=vf;
 				//if (vf<=0.5) vf=0.0001;
@@ -2550,27 +2551,27 @@ void MakeParticle(void)
 				//vf=1;
 				//fprintf(fp, "vf=%.6e\n", vf);
 				//fprint(fp, "dip=%d\n", dip);
-				if (vf==1) refind[index]=ref_index[mat];
-				else {
-					temp1=ref_index[mat]*ref_index[mat];
-					temp2=temp1;
-					temp2-=1;
-					temp3=temp1;
-					temp3+=2;
-					temp1=temp2/temp3;
-					temp1=temp1*vf; // temp1=x=vf*(m^2-1)/(m^2+2)
-					temp2=temp1*2;
-					temp2+=1;
-					temp3=-temp1;
-					temp3+=1;
-					temp1=temp2/temp3;
-					refind[index]=csqrt(temp1);
-				}
-				fprintf(fp, "vf[%llu]= %.6e\n, Ls = %.6e %.6e %.6e\n %.6e %.6e %.6e\n %.6e %.6e %.6e\n", index, vf, Ls[0], Ls[1], Ls[2], Ls[3], Ls[4], Ls[5], Ls[6], Ls[7], Ls[8]);
+				/*if (vf==1)*/ refind[index]=ref_index[mat];
+			//	else {
+			//		temp1=ref_index[mat]*ref_index[mat];
+			//		temp2=temp1;
+			//		temp2-=1;
+			//		temp3=temp1;
+			//		temp3+=2;
+			//		temp1=temp2/temp3;
+			//		temp1=temp1*vf; // temp1=x=vf*(m^2-1)/(m^2+2)
+			//		temp2=temp1*2;
+			//		temp2+=1;
+			//		temp3=-temp1;
+			//		temp3+=1;
+			//		temp1=temp2/temp3;
+			//		refind[index]=csqrt(temp1);
+			//	}
+			//	fprintf(fp, "vf[%llu]= %.6e\n, Ls = %.6e %.6e %.6e\n %.6e %.6e %.6e\n %.6e %.6e %.6e\n", index, vf, Ls[0], Ls[1], Ls[2], Ls[3], Ls[4], Ls[5], Ls[6], Ls[7], Ls[8]);
 				index++;
 
 	}
-	fclose(fp);
+
 	/* from this moment on a_eq and all derived quantities are based on the real a_eq, which can
 		 * in several cases be slightly different from the one given by '-eq_rad' option.
 		 */

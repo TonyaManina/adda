@@ -26,7 +26,9 @@
 #include "oclcore.h"
 #include "Romberg.h"
 #include "timing.h"
+#include "volfrac.h"
 #include "vars.h"
+#include "tagaki_factor.h"
 // system headers
 #include <math.h>
 #include <stdlib.h>
@@ -385,7 +387,7 @@ static inline double MassaIntegral(const double a,const double b,const double c)
 
 //======================================================================================================================
 
-static void CoupleConstant(doublecomplex *mrel,const enum incpol which,doublecomplex res[static 6])
+static void CoupleConstant(doublecomplex *mrel,const enum incpol which,doublecomplex res[static 6], int index)
 /* Input is relative refractive index (mrel) - either one or three components (for anisotropic). incpol is relevant only
  * for LDR without avgpol. res is three values (diagonal of polarizability tensor).
  *
@@ -502,11 +504,13 @@ static void CoupleConstant(doublecomplex *mrel,const enum incpol which,doublecom
 		if (!orient_avg && IFROOT) PrintBoth(logfile, "CoupleConstant: "CFORM3V"\n", REIM3V(res));
 	} 
 	else {
-		if (use_wd){
+		if (use_wd && volfrac[index]<1){
 			doublecomplex alpha[3][3];
-			//ComputePolarizability(mrel[0], volfrac[index], alpha, plSec+3*index);
+			PolarizabilityCalc(mrel[0], volfrac[index], alpha, plSec+3*index);
+			//for (int ii = 0; ii<3; ii++) res[ii] = alpha[ii][ii];
+			res[0]=alpha[0][0]; res[1] = alpha[1][0]; res[2] = alpha[2][0];
+			res[3]=alpha[1][1]; res[4] = alpha[2][1]; res[5] = alpha[2][2];
 			//currently incompationable with anisotropy
-			//res[i]=dipvol*
 		}
 		else{
 		double ka,kd2,S;
@@ -597,17 +601,44 @@ static void CoupleConstant(doublecomplex *mrel,const enum incpol which,doublecom
 static void InitCC(const enum incpol which)
 // calculate cc, cc_sqrt, and chi_inv
 {
+	FILE* out = fopen("cc.wd.txt","wt");
 	int i,j;
 	doublecomplex m;
 	doublecomplex cc[6]; // couple constant
+
 		size_t dip;
 
 		// !!! TODO: this probably needs optimization
+		fprintf(out, "Nmat=%d\n\n", Nmat);
 		for (dip=0;dip<local_nvoid_Ndip;dip++)
 		{
 			// !!! TODO: anisotropy is not considered yet
-			CoupleConstant(refind+dip,which,cc);
-			cc_sqrt[dip]=csqrt(cc[0]); // TODO: matrix sqrt, ask why cc[0] always
+			CoupleConstant(refind+dip,which,cc,dip);
+			if (volfrac[dip]>0.8) {
+			fprintf(out, "dip=%d, vf=%.4f\n", dip, volfrac[dip]);
+			fprintf(out, "%.10f+I*%.10f %.10f+I*%.10f %.10f+I*%.10f\n", creal(cc[0]), cimag(cc[0]), creal(cc[1]), cimag(cc[1]), creal(cc[2]), cimag(cc[2]));
+			fprintf(out, "%.10f+I*%.10f %.10f+I*%.10f %.10f+I*%.10f\n", creal(cc[1]), cimag(cc[1]), creal(cc[3]), cimag(cc[3]), creal(cc[4]), cimag(cc[4]));
+			fprintf(out, "%.10f+I*%.10f %.10f+I*%.10f %.10f+I*%.10f\n", creal(cc[2]), cimag(cc[2]), creal(cc[4]), cimag(cc[4]), creal(cc[5]), cimag(cc[5]));
+			fprintf(out, "\n");
+			}
+			if (use_wd){
+				if (volfrac[dip]<1.0) {
+					doublecomplex al[3][3], betaT[3][3], beta[3][3];
+					double D[3];
+					for (int ii = 0; ii<3; ii++) al[ii][0] = cc[ii];
+					al[0][1] = cc[1]; al[1][1] = cc[3]; al[2][1] = cc[4];
+					al[0][2] = cc[2]; al[1][2] = cc[4]; al[2][2] = cc[5];
+					TakagiFactor(3,al[0],3,D, betaT[0],3,1);
+					MatrTranspose(beta, betaT);
+					for (int ii = 0; ii<3; ii++)
+						for (int jj = 0; jj<3; jj++) betaT[ii][jj] *= sqrt(D[ii]);
+					for (int col = 0; col<3; col++)
+						for ( int raw = 0; raw<3; raw++) cc_sqrt[9*dip + col+3*raw] = betaT[col][raw];
+				}
+				else cc_sqrt[9*dip]=csqrt(cc[0]);
+			} else {
+				cc_sqrt[dip]=csqrt(cc[0]);
+			}
 		}
 	for(i=0;i<Nmat;i++) {
 		//CoupleConstant(ref_index+Ncomp*i,which,cc[i]);
@@ -626,6 +657,7 @@ static void InitCC(const enum incpol which)
 	 */
 	CL_CH_ERR(clEnqueueWriteBuffer(command_queue,bufcc_sqrt,CL_TRUE,0,sizeof(cc_sqrt),cc_sqrt,0,NULL,NULL));
 #endif
+fclose(out);
 }
 
 //======================================================================================================================
@@ -714,7 +746,7 @@ static void AllocateEverything(void)
 	 * vector, will surely cause segmentation fault afterwards. So we do not implement these extra tests for now.
 	 */
 	// allocate all the memory
-	if (!prognosis) MALLOC_VECTOR(cc_sqrt,complex,local_nvoid_Ndip,ALL);
+	if (!prognosis) MALLOC_VECTOR(cc_sqrt,complex,local_nvoid_Ndip*9,ALL);
 		memory+=sizeof(doublecomplex)*(double)local_nvoid_Ndip;
 	tmp=sizeof(doublecomplex)*(double)local_nRows;
 	if (!prognosis) { // main 5 vectors, some of them are used in the iterative solver

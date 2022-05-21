@@ -29,6 +29,9 @@
 #include "timing.h"
 #include "vars.h"
 #include "volfrac.h"
+#include "qr.h"
+#include "tagaki_factor.h"
+
 // system headers
 #include <math.h>
 #include <stdlib.h>
@@ -89,7 +92,7 @@ void FillCubePlaneIntHelperArray(double nv[8], double n[3]) {
 
 //======================================================================================================================
 
-int CubePlaneRawIntersections(const double n[3], double intersections[12][3], int edgeCounts[6]) {
+int CubePlaneRawIntersections(const double n[3], double intersections[24][3], int edgeCounts[6]) {
 	int i_idx = 0;
 	double nv[8];
 
@@ -115,7 +118,7 @@ int CubePlaneRawIntersections(const double n[3], double intersections[12][3], in
 
 //======================================================================================================================
 
-void PointsCenter(const double p[12][3], int n, double c[3]) {
+void PointsCenter(const double p[24][3], int n, double c[3]) {
 	vInit(c);
 	for (int i = 0; i < n; i++)
 		vAdd(c, p[i], c);
@@ -141,12 +144,11 @@ double PointWalkOrd(const double u0[3], const double u[3], const double n[3]) {
 
 //======================================================================================================================
 
-int ReorderPoints(const double p[12][3], int k, const double n[3], const double pReordered[12][3]) {
+int ReorderPoints(const double p[24][3], int k, const double n[3], const double pReordered[24][3]) {
 	double c[3] = {0,0,0};
-	double diff[3] = {0,0,0};
-	double u[12][3];
-	double ords[12];
-	int walkIndexes[12];
+	double u[24][3];
+	double ords[24];
+	int walkIndexes[24];
 	if (k == 0) return 0;
 
 	// switch to figure center coords
@@ -186,14 +188,13 @@ int ReorderPoints(const double p[12][3], int k, const double n[3], const double 
 
 //======================================================================================================================
 
-void CalculationOfLsTensor(const double p[12][3], int k, const double n[3], double L[9] ) {
+void CalculationOfLsTensor(const double p[24][3], int k, const double n[3], double L[9] ) {
 	if (k<3) return;
 	//calculation of h
 	double hlog[3] = {0,0,0}, q[3]= {0,0,0}, c[3], boof[3]={0,0,0};
 	double logarifm;
-	double u[12][3];
+	double u[24][3];
 
-    //PointsCenter(p, k, c);
 	c[0]=0.5; c[1]=0.5; c[2]=0.5;
     for (int j=0; j<k; j++)
     	 vSubtr(p[j],c,u[j]);
@@ -206,11 +207,9 @@ void CalculationOfLsTensor(const double p[12][3], int k, const double n[3], doub
     	logarifm=log((DotProd(u[j+1],q)+vNorm(u[j+1]))/(DotProd(u[j],q)+vNorm(u[j])));
     	vMultScal(logarifm,q,q);
     	vAdd(hlog,q,hlog);
-
     }
-	//calculation of omega
-	double omega = 0;
-	//c[0]=0.5; c[1]=0.5; c[2]=0.5;
+
+	double omega = 0; //calculation of omega
 	for (int j=0; j<k; j++) {
 		//vSubtr(p[j],c,u[j]);
     	double uNorm=vNorm(u[j]);
@@ -221,6 +220,7 @@ void CalculationOfLsTensor(const double p[12][3], int k, const double n[3], doub
     	CrossProd(u[j+1], u[j+2], prod);
     	double f = DotProd(u[j], prod);
     	double g = 1 + DotProd(u[j],u[j+1]) + DotProd(u[j],u[j+2]) + DotProd(u[j+1],u[j+2]);
+
     	if (fabs(g)<check && f>=0) omega += M_PI;
     	if (fabs(g)<check && f<0) omega -= M_PI;
     	if (fabs(g)>=check) {
@@ -242,8 +242,8 @@ void CalculationOfLsTensor(const double p[12][3], int k, const double n[3], doub
     		}
     	}
     }
-    //Calculation of Ls
-    double prod[3], omegan[3];
+
+    double prod[3], omegan[3]; //Calculation of Ls
     CrossProd(n,hlog,prod);
     vMultScal(omega, n, omegan);
     vAdd(prod, omegan, prod);
@@ -251,27 +251,17 @@ void CalculationOfLsTensor(const double p[12][3], int k, const double n[3], doub
     L[0]+=prod[0]*n[0]; L[1]+=prod[0]*n[1]; L[2]+=prod[0]*n[2];
     L[3]+=prod[1]*n[0]; L[4]+=prod[1]*n[1]; L[5]+=prod[1]*n[2];
     L[6]+=prod[2]*n[0]; L[7]+=prod[2]*n[1]; L[8]+=prod[2]*n[2];
-
 }
 //======================================================================================================================
-void TestVolFrac(doublecomplex refind, double vf) {
-	double nv[8];
-	doublecomplex chi_out[3] = {1,1,1}; //chi of outer space
-	doublecomplex alpha[3][3];
+void PolarizabilityCalc(doublecomplex refind, double vf, doublecomplex alpha[3][3], double n[3] ) {
+	printf("refind = %.5f+I%.5f; vf = %.5f\n", creal(refind), cimag(refind), vf);
 	double Ls[9] = {0,0,0,0,0,0,0,0,0};
-	double T[3][3], chi_eff[3][3], LsMatr[3][3];
-	double n[3] = {0.25, 0.5, 0.75};
-	double UnsortedEdgePoints[6][12][3];
-	double SortedEdgePoints[6][12][3];
-	double CubeEdgePoints[6][12][3];
-	int NumberOfPoints[6];
-	double intersections[12][3];
-	double pOrdered[12][3];
-	double pOrdered_inv[12][3];
-	int counting = 0, accumCounting = 0;
-	double intersectionCounting = 0;
+	doublecomplex T[3][3], chi_eff[3][3], LsMatr[3][3]; //chi of outer space
+	double UnsortedEdgePoints[6][24][3], SortedEdgePoints[6][24][3];
+	double intersections[24][3], pOrdered[24][3], pOrdered_inv[24][3];
+	int counting = 0, accumCounting = 0, NumberOfPoints[6], edgeIntCounts[6]; // separate counts of intersections (by edges)
 	bool CenterUpperPlane = PointUpperPlane(CubeCenter, n);
-	int edgeIntCounts[6]; // separate counts of intersections (by edges)
+
 	int k = CubePlaneRawIntersections(n, intersections, edgeIntCounts);
 	k = ReorderPoints(intersections, k, n, pOrdered);
 	for (int j=0; j<6; j++){
@@ -293,99 +283,78 @@ void TestVolFrac(doublecomplex refind, double vf) {
 		NumberOfPoints[j]=counting;
 	}
 
-	for (int i=0; i<6; i++) {
+	for (int i=0; i<6; i++)
 		NumberOfPoints[i] = ReorderPoints(UnsortedEdgePoints[i], NumberOfPoints[i], CubeEdgeNorm[i], SortedEdgePoints[i]);
-	}
-//	for (int i=0; i<6; i++) {
-//		CalculationOfLsTensor(CubeEdgePoints[i], 4, CubeEdgeNorm[i], Ls );
-//	}
-	for (int i=0; i<6; i++) {
+
+	for (int i=0; i<6; i++)
 		CalculationOfLsTensor(SortedEdgePoints[i], NumberOfPoints[i], CubeEdgeNorm[i], Ls );
-	}
+
 	if (CenterUpperPlane == false){
 		vInvSign(n);
-		for (int i=0; i<k; i++){
-			vCopy(pOrdered[i],pOrdered_inv[k-i-1]);
-		}
+		for (int i=0; i<k; i++) vCopy(pOrdered[i],pOrdered_inv[k-i-1]);
 		CalculationOfLsTensor(pOrdered_inv, k, n, Ls );
-	}
-	else {
+	} else {
 		CalculationOfLsTensor(pOrdered, k, n, Ls );
 	}
 	vNormalize(n);
-
-	doublecomplex M=(SO_B1*kd*kd+I*2*kd*kd*kd/3)*vf,
-		chi_s = (refind - 1.0) / (4.0 * M_PI);
-
-	MatrSet(T, 0);
-	for (int i = 0; i<3; i++)
-		for (int j=0; j<3; j++)
-			T[i][j] = n[i]*n[j];
-	MatrMul(T, 1.0 / (refind * refind) - 1.0);
-	MatrAdd(T, Eye3);
-
-	MatrCopy(chi_eff, T);
-	MatrMul(chi_eff, vf * chi_s); //chi_eff[i*3+j]=(1-vf)*chi_out[i]*(i==j ? 1.0 : 0.0)+vf*1*T[i*3+j]; m_hoff not considered yet
-
-	MatrPlainTo3x3(Ls,LsMatr);
-	doublecomplex temp[3][3], temp1[3][3];
-	MatrCopy(temp,Eye3);
-	MatrMul(temp,-M);
-	MatrAdd(temp,LsMatr);
-	MatrMul(temp,chi_s);
-	MatrDotProd(temp,T,temp1);
-	MatrAdd(temp1, Eye3);
-	MatrInverse(temp1,temp);
-	MatrDotProd(chi_eff,temp,alpha);
-	MatrMul(alpha,dipvol);
-
-	PrintVector(intersections[0]);
-	int dsfdasfasd = 0;
-	// k = amount of intersection points
-	// pOrdered - ordered points
-
-
-
-	/*
-	double p[3] = {0.3, 0.3, 0.3};
-	double plane_n[3] = {0.5, 0.5, 0.5};
-	bool r = PointUpperPlane(p, plane_n);
-
-	if (r != false) {
-		printf("True\n");
-		int dfssafds = 0;
-	} else printf("False\n");*/
+	//DblPlainToCmplx3x3(Ls,LsMatr);
+	LsMatr[0][0] = Ls[0]; LsMatr[1][0] = Ls[1]; LsMatr[2][0] = Ls[2];
+	LsMatr[0][1] = Ls[3]; LsMatr[1][1] = Ls[4]; LsMatr[2][1] = Ls[5];
+	LsMatr[0][2] = Ls[6]; LsMatr[1][2] = Ls[7]; LsMatr[2][2] = Ls[8];
+	doublecomplex LpMatr[3][3];
+	MatrCopy(3,LpMatr,Eye3); MatrMul(LpMatr,4*M_PI/3.0);
+	MatrSubtract(LpMatr,LsMatr);
+	//MatrCopy(3,LsMatr,Eye3); MatrMul(LsMatr,4*M_PI/3.0); //сделала матрицу Ls для теста 4pi/3 * I
+	doublecomplex temp[3][3], temp1[3][3], alphaT[3][3];
+	doublecomplex M=(SO_B1*kd*kd+I*2*kd*kd*kd/3)*vf;
+	//doublecomplex M = (0.278405 + I*0.048897524);
+	doublecomplex chi_p = (refind*refind - 1.0)/ (4.0 * M_PI); // 1.0017 refind (как в стандартном запуске)
+	//MatrSet(T, 0);
+	//for (int i = 0; i<3; i++)
+	//	for (int j=0; j<3; j++)
+	//		T[j][i] = n[i]*n[j]; //заполняю Т, i - строка j - столбец
+	//MatrMul(T, 1.0 / (refind * refind) - 1.0); //умножаю Т на 1/(e-1) (в числителе e среды = 1 поэтому 1/e)
+//	MatrAdd(T, Eye3);// T = E + n n / (refind*refind-1)
+	doublecomplex alphamaster;
+	alphamaster = (3*dipvol*(refind*refind - 1)/(4*M_PI*(refind*refind+2)))/(1-3*(refind*refind-1)*M/(4*M_PI*(refind*refind+2)));
+	MatrCopy(3, chi_eff, Eye3);
+	MatrMul(chi_eff, vf * chi_p); //chi_eff[i*3+j]=(1-vf)*chi_out[i]*(i==j ? 1.0 : 0.0)+vf*1*T[i*3+j]; m_hoff not considered yet
+	MatrCopy(3, temp, Eye3);
+	MatrMul(temp,-M*vf);// Создала матрицу -М*I = temp
+	MatrAdd(temp,LpMatr); // (Ls-MI)
+	MatrMul(temp,chi_p); //(Ls-MI)*chi_s
+	//MatrDotProd(3,temp,T,temp1); //temp1 = ((Ls-MI)*chi_s)* T
+	MatrAdd(temp, Eye3); // temp1 = ((Ls-MI)*chi_s)* T + I (остальное не учитывается, потому что chi_p = 0
+	MatrInverse(temp,temp1); //temp = (temp1)^-1
+	doublecomplex test[3][3];
+	MatrDotProd(3,temp1,temp,test);
+	MatrDotProd(3, chi_eff,temp1,alpha); // alpha = chi_eff * temp
+	MatrMul(alpha,dipvol); //alpha = alpha * dipvol
+    MatrTranspose(alphaT,alpha);
+    MatrAdd(alpha,alphaT);
+    MatrMul(alpha,1.0/2.0);
 }
+void TestPolCalc() {
+	double n[3] = {1,2,3};
+	doublecomplex m = 1.0017, alpha[3][3];
+	double vf = 1;
+	PolarizabilityCalc(m, vf, alpha, n );
+	int sdfsfs;
 
-//======================================================================================================================
-
-void TestMatrixoops(void){
-	doublecomplex M[3][3] = {
-			{I,7,-1-2*I},
-			{1-I,1,-I},
-			{2+3*I,1+I,3+I}
+}
+void Testmatrinv() {
+	doublecomplex A[3][3] = {
+			{3,98,1},
+			{7,6,12},
+			{4,51,8}
 	};
-
-	doublecomplex M_inv[3][3];
-	MatrInverse(M,M_inv);
-	double ffjfhftjsgd = 0;
+	doublecomplex B[3][3], C[3][3];
+	MatrInverse(A,B);
+    MatrDotProd(3,A,B,C);
+    int dfdfsd = 8;
 }
 
-void TestCubicEq(void) {
-doublecomplex A[3][3] = {
-		{25,68,58},
-		{37,96,78},
-		{22,68,56}
-};
-doublecomplex lam[3];
-Eigenvalues(A,lam);
-doublecomplex B[3][3] = {
-		{0,0,0},
-		{0,0,0},
-		{0,0,0}
-};
-MatrixRoot(A, lam, B);
-doublecomplex sq[3][3];
-MatrDotProd(B,B,sq);
-	int dsdsd = 999;
-}
+
+
+
+

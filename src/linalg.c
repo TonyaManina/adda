@@ -543,7 +543,7 @@ void nMultSelf_cmplx(doublecomplex * restrict a,const doublecomplex c)
 }
 
 //======================================================================================================================
-//02.01.22. Not sure about it
+
 void nMult_dip(doublecomplex * restrict a,const doublecomplex * restrict b,/*const*/ doublecomplex * restrict c)
 /* multiply by a function of material of dipole number; a[3*i+j]=c[i]*b[3*i+j]
  * !!! a,b,c must not alias !!!
@@ -564,6 +564,39 @@ void nMult_dip(doublecomplex * restrict a,const doublecomplex * restrict b,/*con
 		        a[k] = val*b[k];
 		        a[k+1] = val*b[k+1];
 		        a[k+2] = val*b[k+2];
+	}
+}
+
+//======================================================================================================================
+
+
+void MatrnMult_dip(doublecomplex * restrict a,const doublecomplex * restrict b,/*matrix*/ doublecomplex * restrict c,int T)
+/* multiply by a function of material of dipole number; a[3*i+j]=c[i]*b[3*i+j]
+ * !!! a,b,c must not alias !!!
+ * It seems impossible to declare c as constant (due to two pointers)
+ */
+{
+	register const size_t nd=local_nvoid_Ndip; // name 'nd' to distinguish with 'n' used elsewhere
+	register size_t i,k;
+	register int j;
+	/* Hopefully, the following declaration is enough to allow efficient loop unrolling. So the compiler should
+	 * understand that none of the used vectors alias. Otherwise, deeper optimization should be used.
+	 */
+	doublecomplex value, matrix[3][3], matrixT[3][3];
+
+	LARGE_LOOP;
+	for (i=0, k=0; i < nd; i++, k+=3) {
+		if (volfrac[i] < 1.0 ) {
+			MatrPlainTo3x3(c+9*i,matrix);
+			MatrCopy(3,matrixT, matrix);
+			if (T==1) MatrTranspose(matrix, matrixT);
+			MatrVecMul(3, matrix, b+k, a+k);
+		} else {
+			value=c[9*i];
+	        a[k] = value*b[k];
+	        a[k+1] = value*b[k+1];
+	        a[k+2] = value*b[k+2];
+		}
 	}
 }
 

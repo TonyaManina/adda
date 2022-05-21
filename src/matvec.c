@@ -207,8 +207,20 @@ void MatVec (doublecomplex * restrict argvec,    // the argument vector
 	//	mat=material[i];
 		index=IndexXmatrix(position[j],position[j+1],position[j+2]);
 		// Xmat=cc_sqrt*argvec
-		for (Xcomp=0;Xcomp<3;Xcomp++)
-			Xmatrix[index+Xcomp*local_Nsmall]=cc_sqrt[i]*argvec[j+Xcomp];
+		if (use_wd){
+			if (volfrac[i]<1) {
+				doublecomplex plane[9];
+				doublecomplex matrix[3][3], matrixT[3][3];
+				for (int ii = 0; ii<9; ii++) plane[ii] = cc_sqrt[9*i + ii];
+				MatrPlainTo3x3(plane, matrix);
+				MatrTranspose(matrixT, matrix);
+				doublecomplex result[3];
+				MatrVecMul(3,matrixT,argvec+j,result);
+				for (Xcomp=0;Xcomp<3;Xcomp++) Xmatrix[index+Xcomp*local_Nsmall]=result[Xcomp];
+			}
+			else for (Xcomp=0;Xcomp<3;Xcomp++) Xmatrix[index+Xcomp*local_Nsmall]=cc_sqrt[9*i]*argvec[j+Xcomp];
+		}
+		else for (Xcomp=0;Xcomp<3;Xcomp++) Xmatrix[index+Xcomp*local_Nsmall]=cc_sqrt[i]*argvec[j+Xcomp];
 	}
 #ifdef PRECISE_TIMING
 	GET_SYSTEM_TIME(tvp+1);
@@ -353,8 +365,21 @@ void MatVec (doublecomplex * restrict argvec,    // the argument vector
 		j=3*i;
 	//	mat=material[i];
 		index=IndexXmatrix(position[j],position[j+1],position[j+2]);
-		for (Xcomp=0;Xcomp<3;Xcomp++) // result=argvec+cc_sqrt*Xmat
-			resultvec[j+Xcomp]=argvec[j+Xcomp]+cc_sqrt[i]*Xmatrix[index+Xcomp*local_Nsmall];
+		if (use_wd){
+			if (volfrac[i]<1) {
+				doublecomplex plane[9];
+				doublecomplex matrix[3][3];
+				for (int ii = 0; ii<9; ii++) plane[ii] = cc_sqrt[9*i + ii];
+				MatrPlainTo3x3(plane, matrix);
+				doublecomplex result[3];
+				doublecomplex vec[3];
+				vec[0] = Xmatrix[index]; vec[1] = Xmatrix[index + local_Nsmall]; vec[2] = Xmatrix[index + 2*local_Nsmall];
+				MatrVecMul(3,matrix,vec,result);
+				for (Xcomp=0;Xcomp<3;Xcomp++) resultvec[j+Xcomp]=argvec[j+Xcomp]+result[Xcomp];
+			}
+			else for (Xcomp=0;Xcomp<3;Xcomp++) resultvec[j+Xcomp]=argvec[j+Xcomp]+cc_sqrt[9*i]*Xmatrix[index+Xcomp*local_Nsmall];
+		}
+		else for (Xcomp=0;Xcomp<3;Xcomp++) resultvec[j+Xcomp]=argvec[j+Xcomp]+cc_sqrt[i]*Xmatrix[index+Xcomp*local_Nsmall]; // result=argvec+cc_sqrt*Xmat
 		// norm is unaffected by conjugation, hence can be computed here
 		if (ipr) *inprod+=cvNorm2(resultvec+j);
 	}

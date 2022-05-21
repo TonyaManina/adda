@@ -408,7 +408,13 @@ static double ResidualNorm2(doublecomplex * restrict x,doublecomplex * restrict 
 	(*mvp_comm_timing) += mc_time;
 	(*comm_timing) += mc_time;
 	//nMult_mat(r,Einc,cc_sqrt);
-	nMult_dip(r,Einc,cc_sqrt);
+	if (use_wd){
+		MatrnMult_dip(r,Einc,cc_sqrt,1);
+		//nMult_dip(r,Einc,cc_sqrt);
+	}
+	else{
+		nMult_dip(r,Einc,cc_sqrt);
+	}
 	nDecrem(r,buffer,&res,comm_timing);
 	return res;
 }
@@ -1427,7 +1433,7 @@ static void InitFieldfromE(void)
 	// calculate x = (1/cc_sqrt)*V*chi*E (both x and E are stored in xvec)
 	doublecomplex mult[MAX_NMAT][3];
 	int i,j;
-	for (i=0;i<Nmat;i++) for (j=0;j<3;j++) mult[i][j]=1/(cc_sqrt[j]*chi_inv[i][j]);
+	for (i=0;i<Nmat;i++) for (j=0;j<3;j++) mult[i][j]=1/(cc_sqrt[j]*chi_inv[i][j]); //TODO: looks strange
 	nMultSelf_mat(xvec,mult);
 	// calculate A.x_0, r_0=b-A.x_0, and |r_0|^2
 	MatVec(xvec,Avecbuffer,NULL,false,&Timing_MVP,&Timing_MVPComm);
@@ -1517,7 +1523,11 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 	matvec_ready=false; // can be set to true only in CalcInitField (if !load_chpoint)
 	if (!load_chpoint) {
 		//nMult_mat(pvec,Einc,cc_sqrt);
-		nMult_dip(pvec,Einc,cc_sqrt);
+		if (use_wd){
+			MatrnMult_dip(pvec, Einc, cc_sqrt, 1);
+			//nMult_dip(pvec,Einc,cc_sqrt);
+		}
+		else nMult_dip(pvec,Einc,cc_sqrt);
 		temp=nNorm2(pvec,&Timing_InitIterComm); // |r_0|^2 when x_0=0
 		resid_scale=1/temp;
 		epsB=iter_eps*iter_eps*temp;
@@ -1625,7 +1635,12 @@ int IterativeSolver(const enum iter method_in,const enum incpol which)
 	/* x is a solution of a modified system, not exactly internal field; should not be used further except for adaptive
 	 * technique (as starting vector for next system)
 	 */
-	nMult_dip(pvec,xvec,cc_sqrt); // p now contains polarizations. Can be used to calculate e.g. scattered field faster
+	if (use_wd){
+		MatrnMult_dip(pvec,xvec,cc_sqrt,0);
+		//nMult_dip(pvec,xvec,cc_sqrt);
+	}
+	else nMult_dip(pvec,xvec,cc_sqrt); // p now contains polarizations. Can be used to calculate e.g. scattered field faster
+	//TODO: check if betaT must be inverted
 	//nMult_mat(pvec,xvec,cc_sqrt); // p now contains polarizations. Can be used to calculate e.g. scattered field faster.
 	if (chp_exit) return CHP_EXIT; // check if exiting after checkpoint
 	return (niter-1); // the number of iterations elapsed
