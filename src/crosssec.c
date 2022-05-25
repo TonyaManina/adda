@@ -885,7 +885,7 @@ double AbsCross(void)
 			//for (i=0;i<Nmat;i++) for (j=0;j<3;j++) mult[i][j]=-cimag(1/cc[i][j])-temp1;
 			for (dip=0,sum=0;dip<local_nvoid_Ndip;++dip) {
 				//mat=material[dip];
-				if (use_wd){
+				if (use_wd && volfrac[dip]<1){
 					tmp = cc_sqrt[dip*9]*cc_sqrt[dip*9];
 				}
 				else tmp=cc_sqrt[dip]*cc_sqrt[dip]; //TODO: change from scalars to matrixes, not first priority right now

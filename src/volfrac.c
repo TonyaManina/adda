@@ -254,7 +254,7 @@ void CalculationOfLsTensor(const double p[24][3], int k, const double n[3], doub
 }
 //======================================================================================================================
 void PolarizabilityCalc(doublecomplex refind, double vf, doublecomplex alpha[3][3], double n[3] ) {
-	printf("refind = %.5f+I%.5f; vf = %.5f\n", creal(refind), cimag(refind), vf);
+//	printf("refind = %.5f+I%.5f; vf = %.5f\n", creal(refind), cimag(refind), vf);
 	double Ls[9] = {0,0,0,0,0,0,0,0,0};
 	doublecomplex T[3][3], chi_eff[3][3], LsMatr[3][3]; //chi of outer space
 	double UnsortedEdgePoints[6][24][3], SortedEdgePoints[6][24][3];
@@ -329,15 +329,15 @@ void PolarizabilityCalc(doublecomplex refind, double vf, doublecomplex alpha[3][
 	doublecomplex test[3][3];
 	MatrDotProd(3,temp1,temp,test);
 	MatrDotProd(3, chi_eff,temp1,alpha); // alpha = chi_eff * temp
-	MatrMul(alpha,dipvol); //alpha = alpha * dipvol
+	MatrMul(alpha,dipvol/*0.073496359*/); //alpha = alpha * dipvol
     MatrTranspose(alphaT,alpha);
     MatrAdd(alpha,alphaT);
     MatrMul(alpha,1.0/2.0);
 }
 void TestPolCalc() {
-	double n[3] = {1,2,3};
-	doublecomplex m = 1.0017, alpha[3][3];
-	double vf = 1;
+	double n[3] = {1.0/2.9,1.0/2.9,1.0/2.9};
+	doublecomplex m = 1.5, alpha[3][3];
+	double vf = 0.99;
 	PolarizabilityCalc(m, vf, alpha, n );
 	int sdfsfs;
 

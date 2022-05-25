@@ -215,7 +215,7 @@ void MatVec (doublecomplex * restrict argvec,    // the argument vector
 				MatrPlainTo3x3(plane, matrix);
 				MatrTranspose(matrixT, matrix);
 				doublecomplex result[3];
-				MatrVecMul(3,matrixT,argvec+j,result);
+				MatrVecMul(3,matrix,argvec+j,result);
 				for (Xcomp=0;Xcomp<3;Xcomp++) Xmatrix[index+Xcomp*local_Nsmall]=result[Xcomp];
 			}
 			else for (Xcomp=0;Xcomp<3;Xcomp++) Xmatrix[index+Xcomp*local_Nsmall]=cc_sqrt[9*i]*argvec[j+Xcomp];
@@ -368,13 +368,14 @@ void MatVec (doublecomplex * restrict argvec,    // the argument vector
 		if (use_wd){
 			if (volfrac[i]<1) {
 				doublecomplex plane[9];
-				doublecomplex matrix[3][3];
+				doublecomplex matrix[3][3], matrixT[3][3];
 				for (int ii = 0; ii<9; ii++) plane[ii] = cc_sqrt[9*i + ii];
 				MatrPlainTo3x3(plane, matrix);
+				MatrTranspose(matrixT,matrix);
 				doublecomplex result[3];
 				doublecomplex vec[3];
 				vec[0] = Xmatrix[index]; vec[1] = Xmatrix[index + local_Nsmall]; vec[2] = Xmatrix[index + 2*local_Nsmall];
-				MatrVecMul(3,matrix,vec,result);
+				MatrVecMul(3,matrixT,vec,result);
 				for (Xcomp=0;Xcomp<3;Xcomp++) resultvec[j+Xcomp]=argvec[j+Xcomp]+result[Xcomp];
 			}
 			else for (Xcomp=0;Xcomp<3;Xcomp++) resultvec[j+Xcomp]=argvec[j+Xcomp]+cc_sqrt[9*i]*Xmatrix[index+Xcomp*local_Nsmall];

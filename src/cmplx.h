@@ -622,7 +622,8 @@ static inline void MatrColumn(double matr[static 3][3],const int ind,double vec[
 static inline void MatrPlainTo3x3(doublecomplex plain[static 9], doublecomplex m[static 3][3]) {
 	for (int i = 0; i < 3; i++)
 		for (int j = 0; j < 3; j++)
-			m[i][j] = plain[j*3 + i];
+		//	m[i][j] = plain[j*3 + i];
+			m[i][j] = plain[i*3 + j];
 }
 
 //======================================================================================================================

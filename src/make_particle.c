@@ -2527,8 +2527,8 @@ void MakeParticle(void)
 	// copy nontrivial part of arrays and compute (effective) refractive index
 	index=0;
 	nvol=0;
-	FILE *fp;
-	fp = fopen("vf+Ls.txt", "w+");
+	//FILE *fp;
+	//fp = fopen("vf+Ls.txt", "w+");
 	for (dip=0;dip<local_Ndip;dip++) if (material_tmp[dip]<Nmat) {
 	//	double real_temp_2, real_temp_3;
 		mat=material[index]=material_tmp[dip];

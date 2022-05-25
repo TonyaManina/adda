@@ -506,7 +506,8 @@ static void CoupleConstant(doublecomplex *mrel,const enum incpol which,doublecom
 	else {
 		if (use_wd && volfrac[index]<1){
 			doublecomplex alpha[3][3];
-			PolarizabilityCalc(mrel[0], volfrac[index], alpha, plSec+3*index);
+			double nn[3] = {1.0/2.99, 1.0/2.99, 1.0/2.99};
+			PolarizabilityCalc(mrel[0], volfrac[index]/*0.9999*/, alpha, plSec+3*index/*nn*/);
 			//for (int ii = 0; ii<3; ii++) res[ii] = alpha[ii][ii];
 			res[0]=alpha[0][0]; res[1] = alpha[1][0]; res[2] = alpha[2][0];
 			res[3]=alpha[1][1]; res[4] = alpha[2][1]; res[5] = alpha[2][2];
@@ -601,7 +602,7 @@ static void CoupleConstant(doublecomplex *mrel,const enum incpol which,doublecom
 static void InitCC(const enum incpol which)
 // calculate cc, cc_sqrt, and chi_inv
 {
-	FILE* out = fopen("cc.wd.txt","wt");
+	FILE* out = fopen("cc.wd.tmp","wt");
 	int i,j;
 	doublecomplex m;
 	doublecomplex cc[6]; // couple constant
@@ -623,17 +624,23 @@ static void InitCC(const enum incpol which)
 			}
 			if (use_wd){
 				if (volfrac[dip]<1.0) {
-					doublecomplex al[3][3], betaT[3][3], beta[3][3];
+					doublecomplex al[3][3], betaT[3][3], beta[3][3], Dmatr[3][3], temp[3][3], temp1[3][3];
 					double D[3];
 					for (int ii = 0; ii<3; ii++) al[ii][0] = cc[ii];
 					al[0][1] = cc[1]; al[1][1] = cc[3]; al[2][1] = cc[4];
 					al[0][2] = cc[2]; al[1][2] = cc[4]; al[2][2] = cc[5];
 					TakagiFactor(3,al[0],3,D, betaT[0],3,1);
+					MatrSet(Dmatr, 0) ;
+					for (int ii = 0; ii<3; ii++) Dmatr[ii][ii] = D[ii];
 					MatrTranspose(beta, betaT);
+					MatrDotProd(3,Dmatr,betaT,temp);
+					MatrDotProd(3,beta,temp,temp1);
 					for (int ii = 0; ii<3; ii++)
 						for (int jj = 0; jj<3; jj++) betaT[ii][jj] *= sqrt(D[ii]);
+					MatrTranspose(beta,betaT);
+					MatrDotProd(3,betaT,beta,temp1);
 					for (int col = 0; col<3; col++)
-						for ( int raw = 0; raw<3; raw++) cc_sqrt[9*dip + col+3*raw] = betaT[col][raw];
+						for ( int raw = 0; raw<3; raw++) cc_sqrt[9*dip + 3*col+raw] = betaT[col][raw];
 				}
 				else cc_sqrt[9*dip]=csqrt(cc[0]);
 			} else {
